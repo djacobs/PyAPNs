@@ -73,15 +73,26 @@ class APNs(object):
     
     def feedback_server(self):
         if not self._feedback_connection:
-            self._feedback_connection = FeedbackConnection(is_test=self.is_test, cert_file=self.cert_file, key_file=self.key_file)
+            self._feedback_connection = FeedbackConnection(
+                is_test   = self.is_test, 
+                cert_file = self.cert_file, 
+                key_file  = self.key_file
+            )
         return self._feedback_connection
     
     def gateway_server(self):
         if not self._gateway_connection:
-            self._gateway_connection = GatewayConnection(is_test=self.is_test, cert_file=self.cert_file, key_file=self.key_file)
+            self._gateway_connection = GatewayConnection(
+                is_test   = self.is_test, 
+                cert_file = self.cert_file, 
+                key_file  = self.key_file
+            )
         return self._gateway_connection
     
 class APNsConnection(object):
+    """
+    A generic connection class for communicating with the APNs
+    """
     def __init__(self, cert_file=None, key_file=None):
         super(APNsConnection, self).__init__()
         self.cert_file   = cert_file
@@ -91,11 +102,11 @@ class APNsConnection(object):
     
     def __del__(self):
         self._disconnect();
-
+    
     def _connect(self):
         self._socket = socket(AF_INET, SOCK_STREAM)
         self._socket.connect((self.server, self.port))
-
+        
         # Establish a TLS connection
         self._connection = TLSConnection(self._socket)
 
@@ -112,14 +123,18 @@ class APNsConnection(object):
     def _disconnect(self):
         if self._connection: self._connection.close()
         if self._socket:     self._socket.close()
-        
+    
     def connection(self):
         if not self._connection:
             self._connect()
         return self._connection
+    
+    
 
 class FeedbackConnection(APNsConnection):
-    """docstring for FeedbackConnection"""
+    """
+    A class representing a connection to the APNs Feedback server
+    """
     def __init__(self, is_test=False, **kwargs):
         super(FeedbackConnection, self).__init__(**kwargs)
         self.server = ('feedback.push.apple.com', 'feedback.sandbox.push.apple.com')[is_test]
@@ -127,14 +142,17 @@ class FeedbackConnection(APNsConnection):
     
     def _chunks(self):
         BUF_SIZE = 4096
+        conn = self.connection()
         while 1:
-            data = self.connection().recv(BUF_SIZE)
+            data = conn.recv(BUF_SIZE)
             yield data
             if not data:
                 break
     
     def items(self):
-        """An iterator that yields (token_hex, fail_time) pairs retrieved from the APNs feedback server"""
+        """
+        A generator that yields (token_hex, fail_time) pairs retrieved from the APNs feedback server
+        """
         buff = ''
         for chunk in self._chunks():
             # print "Reading %u bytes of data into buffer" % len(chunk)
@@ -144,13 +162,13 @@ class FeedbackConnection(APNsConnection):
             # Quit if there's no more data to read
             if not buff: 
                 break
-
+            
             # Sanity check: after a socket read we should always have at least
             # 6 bytes in the buffer
             if len(buff) < 6:
                 # print "ERROR: buffer length after socket read: %u" % len(buff)
                 break
-
+            
             while len(buff) > 6:
                 token_length = APNs.unpacked_ushort_big_endian(buff[4:6])
                 bytes_to_read = 6 + token_length
@@ -172,7 +190,9 @@ class FeedbackConnection(APNsConnection):
                     break
 
 class GatewayConnection(APNsConnection):
-    """docstring for GatewayConnection"""
+    """
+    A class that represents a connection to the APNs gateway server
+    """
     def __init__(self, is_test=False, **kwargs):
         super(GatewayConnection, self).__init__(**kwargs)
         self.server = ('gateway.push.apple.com', 'gateway.sandbox.push.apple.com')[is_test]
@@ -185,10 +205,7 @@ class GatewayConnection(APNsConnection):
         payload_json        = simplejson.dumps(payload, separators=(',',':'))
         payload_length_bin  = APNs.packed_ushort_big_endian(len(payload_json))
         
-        
         notification = '\0' + token_length_bin + token_bin + payload_length_bin + payload_json
         
         self.connection().send(notification)
-
-
 
