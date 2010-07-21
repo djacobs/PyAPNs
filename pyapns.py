@@ -1,9 +1,9 @@
 from datetime import datetime
 from socket import socket, AF_INET, SOCK_STREAM
 from struct import pack, unpack
-from tlslite.api import *
 
 import simplejson
+import ssl
 
 class APNs(object):
     
@@ -104,25 +104,18 @@ class APNsConnection(object):
         self._disconnect();
     
     def _connect(self):
-        self._socket = socket(AF_INET, SOCK_STREAM)
-        self._socket.connect((self.server, self.port))
-        
-        # Establish a TLS connection
-        self._connection = TLSConnection(self._socket)
-
-        cert = open(self.cert_file).read()
-        x509 = X509()
-        x509.parse(cert)
-        certChain = X509CertChain([x509]) 
-
-        key = open(self.key_file).read()
-        privateKey = parsePEMKey(key, private=True)
-        
-        self._connection.handshakeClientCert(certChain, privateKey)
+        # Establish an SSL connection
+        self._connection = ssl.wrap_socket(
+            socket(AF_INET, SOCK_STREAM), 
+            keyfile=self.key_file, 
+            certfile=self.cert_file
+        )
+        self._connection.connect((self.server, self.port))
     
     def _disconnect(self):
-        if self._connection: self._connection.close()
-        if self._socket:     self._socket.close()
+        if self._connection:
+            socket = self._connection.unwrap()
+            socket.close()
     
     def connection(self):
         if not self._connection:
