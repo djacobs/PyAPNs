@@ -6,6 +6,7 @@ import simplejson
 import ssl
 
 class APNs(object):
+    """A class representing an Apple Push Notification service connection"""
     
     @classmethod
     def byte_string_to_hex(cls, bstr):
@@ -60,10 +61,8 @@ class APNs(object):
         """
         return unpack('>I', bytes)[0]
 
-    
-    
-    """A class representing an Apple Push Notification service connection"""
     def __init__(self, is_test=False, cert_file=None, key_file=None):
+        """Set is_test to True to use the sandbox (test) APNs servers. Default is False."""
         super(APNs, self).__init__()
         self.is_test    = is_test
         self.cert_file  = cert_file
@@ -98,7 +97,6 @@ class APNsConnection(object):
         self.cert_file   = cert_file
         self.key_file    = key_file
         self._connection = None
-        self._socket     = None
     
     def __del__(self):
         self._disconnect();
@@ -192,7 +190,7 @@ class GatewayConnection(APNsConnection):
         self.port = 2195
     
     def send_notification(self, token_hex, payload):
-        """docstring for send_notification"""
+        """Takes a token as a hex string and a payload as a Python dict and sends the notification"""
         token_bin           = APNs.byte_string_from_hex(token_hex)
         token_length_bin    = APNs.packed_ushort_big_endian(len(token_bin))
         payload_json        = simplejson.dumps(payload, separators=(',',':'))
