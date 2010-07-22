@@ -13,7 +13,7 @@ A Python library for interacting with the Apple Push Notification service (APNs)
     payload   = {'aps': {alert': {'body': 'Hello world!'}}}
     
     gateway_server = apns.gateway_server()
-    gateway_server.send_notification(s.apns_token_hex, s.get_payload())
+    gateway_server.send_notification(token_hex, payload)
     
     # Get feedback messages
     feedback_server = apns.feedback_server()
