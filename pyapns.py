@@ -61,10 +61,10 @@ class APNs(object):
         """
         return unpack('>I', bytes)[0]
 
-    def __init__(self, is_test=False, cert_file=None, key_file=None):
-        """Set is_test to True to use the sandbox (test) APNs servers. Default is False."""
+    def __init__(self, use_sandbox=False, cert_file=None, key_file=None):
+        """Set use_sandbox to True to use the sandbox (test) APNs servers. Default is False."""
         super(APNs, self).__init__()
-        self.is_test    = is_test
+        self.use_sandbox    = use_sandbox
         self.cert_file  = cert_file
         self.key_file   = key_file
         self._feedback_connection = None
@@ -74,7 +74,7 @@ class APNs(object):
     def feedback_server(self):
         if not self._feedback_connection:
             self._feedback_connection = FeedbackConnection(
-                is_test   = self.is_test, 
+                use_sandbox   = self.use_sandbox, 
                 cert_file = self.cert_file, 
                 key_file  = self.key_file
             )
@@ -84,7 +84,7 @@ class APNs(object):
     def gateway_server(self):
         if not self._gateway_connection:
             self._gateway_connection = GatewayConnection(
-                is_test   = self.is_test, 
+                use_sandbox   = self.use_sandbox, 
                 cert_file = self.cert_file, 
                 key_file  = self.key_file
             )
@@ -128,9 +128,9 @@ class FeedbackConnection(APNsConnection):
     """
     A class representing a connection to the APNs Feedback server
     """
-    def __init__(self, is_test=False, **kwargs):
+    def __init__(self, use_sandbox=False, **kwargs):
         super(FeedbackConnection, self).__init__(**kwargs)
-        self.server = ('feedback.push.apple.com', 'feedback.sandbox.push.apple.com')[is_test]
+        self.server = ('feedback.push.apple.com', 'feedback.sandbox.push.apple.com')[use_sandbox]
         self.port = 2196
     
     def _chunks(self):
@@ -186,9 +186,9 @@ class GatewayConnection(APNsConnection):
     """
     A class that represents a connection to the APNs gateway server
     """
-    def __init__(self, is_test=False, **kwargs):
+    def __init__(self, use_sandbox=False, **kwargs):
         super(GatewayConnection, self).__init__(**kwargs)
-        self.server = ('gateway.push.apple.com', 'gateway.sandbox.push.apple.com')[is_test]
+        self.server = ('gateway.push.apple.com', 'gateway.sandbox.push.apple.com')[use_sandbox]
         self.port = 2195
     
     def send_notification(self, token_hex, payload):
