@@ -70,6 +70,7 @@ class APNs(object):
         self._feedback_connection = None
         self._gateway_connection = None
     
+    @property
     def feedback_server(self):
         if not self._feedback_connection:
             self._feedback_connection = FeedbackConnection(
@@ -79,6 +80,7 @@ class APNs(object):
             )
         return self._feedback_connection
     
+    @property
     def gateway_server(self):
         if not self._gateway_connection:
             self._gateway_connection = GatewayConnection(

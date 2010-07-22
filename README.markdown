@@ -12,13 +12,10 @@ A Python library for interacting with the Apple Push Notification service (APNs)
     token_hex = 'b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c'
     payload   = {'aps': {alert': {'body': 'Hello world!'}}}
     
-    gateway_server = apns.gateway_server()
-    gateway_server.send_notification(token_hex, payload)
+    apns.gateway_server.send_notification(token_hex, payload)
     
     # Get feedback messages
-    feedback_server = apns.feedback_server()
-
-    for (token_hex, fail_time) in feedback_server.items():
+    for (token_hex, fail_time) in apns.feedback_server.items():
         # do stuff with token_hex and fail_time
 
 ## TODO
