@@ -27,7 +27,13 @@ For more complicated alerts including custom buttons etc, use the PayloadAlert c
     alert = PayloadAlert("Hello world!", action_loc_key="Click me")
     payload = Payload(alert=alert, sound="default")
 
+## Further Info
+
+[iOS Reference Library: Local and Push Notification Programming Guide][a1]
+
 ## Credits
 
-Written and maintained by Simon Whitaker at [Goo Software Ltd](http://www.goosoftware.co.uk/) 
+Written and maintained by Simon Whitaker at [Goo Software Ltd](http://www.goosoftware.co.uk/).
+
+[a1]:http://developer.apple.com/iphone/library/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Introduction/Introduction.html#//apple_ref/doc/uid/TP40008194-CH1-SW1
 
