@@ -5,6 +5,8 @@ from struct import pack, unpack
 import simplejson
 import ssl
 
+MAX_PAYLOAD_LENGTH = 256
+
 class APNs(object):
     """A class representing an Apple Push Notification service connection"""
     
@@ -60,7 +62,7 @@ class APNs(object):
         Returns an unsigned int from a packed big-endian (network) byte array
         """
         return unpack('>I', bytes)[0]
-
+    
     def __init__(self, use_sandbox=False, cert_file=None, key_file=None):
         """Set use_sandbox to True to use the sandbox (test) APNs servers. Default is False."""
         super(APNs, self).__init__()
@@ -89,7 +91,8 @@ class APNs(object):
                 key_file  = self.key_file
             )
         return self._gateway_connection
-    
+
+
 class APNsConnection(object):
     """
     A generic connection class for communicating with the APNs
@@ -124,6 +127,68 @@ class APNsConnection(object):
     
     
 
+
+class PayloadAlert(object):
+    """docstring for PayloadAlert"""
+    def __init__(self, body, action_loc_key=None, loc_key=None, loc_args=None, launch_image=None):
+        super(PayloadAlert, self).__init__()
+        self.body = body
+        self.action_loc_key = action_loc_key
+        self.loc_key = loc_key
+        self.loc_args = loc_args
+        self.launch_image = launch_image
+
+    def dict(self):
+        d = { 'body': self.body }
+        if self.action_loc_key:
+            d['action-loc-key'] = self.action_loc_key
+        if self.loc_key:
+            d['loc-key'] = self.loc_key
+        if self.loc_args:
+            d['loc-args'] = self.loc_args
+        if self.launch_image:
+            d['launch-image'] = self.launch_image
+        return d
+        
+class PayloadTooLargeError(Exception):
+    """docstring for PayloadTooLongException"""
+    def __init__(self):
+        super(PayloadTooLargeError, self).__init__()
+
+class Payload(object):
+    """A class representing an APNs message payload"""
+    def __init__(self, alert=None, badge=None, sound=None):
+        super(Payload, self).__init__()
+        self.alert = alert
+        self.badge = badge
+        self.sound = sound
+        self._check_size()
+    
+    def dict(self):
+        """Returns the payload as a regular Python dictionary"""
+        d = {}
+        if self.alert:
+            # Alert can be either a string or a PayloadAlert
+            # object
+            if isinstance(self.alert, PayloadAlert):
+                d['alert'] = self.alert.dict()
+            else:
+                d['alert'] = self.alert
+        if self.sound:
+            d['sound'] = self.sound
+        if self.badge:
+            d['badge'] = int(self.badge)
+        
+        return { 'aps': d }
+    
+    def json(self):
+        """docstring for json"""
+        return simplejson.dumps(self.dict(), separators=(',',':'))
+    
+    def _check_size(self):
+        if len(self.json()) > MAX_PAYLOAD_LENGTH:
+            raise PayloadTooLargeError()
+        
 class FeedbackConnection(APNsConnection):
     """
     A class representing a connection to the APNs Feedback server
@@ -195,10 +260,11 @@ class GatewayConnection(APNsConnection):
         """Takes a token as a hex string and a payload as a Python dict and sends the notification"""
         token_bin           = APNs.byte_string_from_hex(token_hex)
         token_length_bin    = APNs.packed_ushort_big_endian(len(token_bin))
-        payload_json        = simplejson.dumps(payload, separators=(',',':'))
+        payload_json        = payload.json()
         payload_length_bin  = APNs.packed_ushort_big_endian(len(payload_json))
         
         notification = '\0' + token_length_bin + token_bin + payload_length_bin + payload_json
         
         self.connection().send(notification)
+
 

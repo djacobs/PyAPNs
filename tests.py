@@ -1,4 +1,4 @@
-from pyapns import APNs
+from pyapns import *
 from random import random
 
 import hashlib
@@ -31,8 +31,8 @@ def mock_chunks_generator():
         data = data[BUF_SIZE:]
 
 
-class TestDataset(unittest.TestCase):
-    """Unit tests for the Dataset class"""
+class TestAPNs(unittest.TestCase):
+    """Unit tests for PyAPNs"""
 
     def setUp(self):
         """docstring for setUp"""
@@ -80,6 +80,56 @@ class TestDataset(unittest.TestCase):
             self.assertEqual(token_hex, mock_tokens[i])
             i += 1
         self.assertEqual(i, NUM_MOCK_TOKENS)
+    
+    def testPayloadAlert(self):
+        pa = PayloadAlert('foo')
+        d = pa.dict()
+        self.assertEqual(d['body'], 'foo')
+        self.assertFalse('action-loc-key' in d)
+        self.assertFalse('loc-key' in d)
+        self.assertFalse('loc-args' in d)
+        self.assertFalse('launch-image' in d)
+
+        pa = PayloadAlert('foo', action_loc_key='bar', loc_key='wibble', loc_args=['king','kong'], launch_image='wobble')
+        d = pa.dict()
+        self.assertEqual(d['body'], 'foo')
+        self.assertEqual(d['action-loc-key'], 'bar')
+        self.assertEqual(d['loc-key'], 'wibble')
+        self.assertEqual(d['loc-args'], ['king','kong'])
+        self.assertEqual(d['launch-image'], 'wobble')
+
+    def testPayload(self):
+        # Payload with just alert
+        p = Payload(alert=PayloadAlert('foo'))
+        d = p.dict()
+        self.assertTrue('alert' in d['aps'])
+        self.assertTrue('sound' not in d['aps'])
+        self.assertTrue('badge' not in d['aps'])
+
+        # Payload with just sound
+        p = Payload(sound="foo")
+        d = p.dict()
+        self.assertTrue('sound' in d['aps'])
+        self.assertTrue('alert' not in d['aps'])
+        self.assertTrue('badge' not in d['aps'])
+        
+        # Payload with just badge
+        p = Payload(badge=1)
+        d = p.dict()
+        self.assertTrue('badge' in d['aps'])
+        self.assertTrue('alert' not in d['aps'])
+        self.assertTrue('sound' not in d['aps'])
+        
+        # Test plain string alerts
+        alert_str = 'foobar'
+        p = Payload(alert=alert_str)
+        d = p.dict()
+        self.assertEqual(d['aps']['alert'], alert_str)
+        self.assertTrue('sound' not in d['aps'])
+        self.assertTrue('badge' not in d['aps'])
+
+    def testPayloadTooLargeError(self):
+        self.assertRaises(PayloadTooLargeError, Payload, PayloadAlert('.' * 300))
 
 if __name__ == '__main__':
     unittest.main()
