@@ -1,9 +1,9 @@
 from datetime import datetime
-from socket import socket, AF_INET, SOCK_STREAM
+from socket import socket, AF_INET, SOCK_STREAM, ssl
 from struct import pack, unpack
 
 import simplejson
-import ssl
+# import ssl
 
 MAX_PAYLOAD_LENGTH = 256
 
@@ -99,33 +99,34 @@ class APNsConnection(object):
     """
     def __init__(self, cert_file=None, key_file=None):
         super(APNsConnection, self).__init__()
-        self.cert_file   = cert_file
-        self.key_file    = key_file
-        self._connection = None
+        self.cert_file  = cert_file
+        self.key_file   = key_file
+        self._socket    = None
+        self._ssl       = None
     
     def __del__(self):
         self._disconnect();
     
     def _connect(self):
         # Establish an SSL connection
-        self._connection = ssl.wrap_socket(
-            socket(AF_INET, SOCK_STREAM), 
-            keyfile=self.key_file, 
-            certfile=self.cert_file
-        )
-        self._connection.connect((self.server, self.port))
+        self._socket = socket(AF_INET, SOCK_STREAM)
+        self._socket.connect((self.server, self.port))
+        self._ssl = ssl(self._socket, self.key_file, self.cert_file)
     
     def _disconnect(self):
-        if self._connection:
-            socket = self._connection.unwrap()
-            socket.close()
+        if self._socket:
+            self._socket.close()
     
-    def connection(self):
-        if not self._connection:
+    def _connection(self):
+        if not self._ssl:
             self._connect()
-        return self._connection
+        return self._ssl
     
+    def read(self, n=None):
+        return self._connection().read(n)
     
+    def write(self, string):
+        return self._connection().write(string)
 
 
 class PayloadAlert(object):
@@ -200,9 +201,8 @@ class FeedbackConnection(APNsConnection):
     
     def _chunks(self):
         BUF_SIZE = 4096
-        conn = self.connection()
         while 1:
-            data = conn.recv(BUF_SIZE)
+            data = self.read(BUF_SIZE)
             yield data
             if not data:
                 break
@@ -265,6 +265,6 @@ class GatewayConnection(APNsConnection):
         
         notification = '\0' + token_length_bin + token_bin + payload_length_bin + payload_json
         
-        self.connection().send(notification)
+        self.write(notification)
 
 
