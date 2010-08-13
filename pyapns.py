@@ -3,7 +3,6 @@ from socket import socket, AF_INET, SOCK_STREAM, ssl
 from struct import pack, unpack
 
 import simplejson
-# import ssl
 
 MAX_PAYLOAD_LENGTH = 256
 
@@ -13,14 +12,16 @@ class APNs(object):
     @classmethod
     def byte_string_to_hex(cls, bstr):
         """
-        Convenience method for converting a byte string to its hex representation
+        Convenience method for converting a byte string to its hex
+        representation
         """
         return ''.join(['%02x' % i for i in unpack('%iB' % len(bstr), bstr)])
     
     @classmethod
     def byte_string_from_hex(cls, hstr):
         """
-        Convenience method for converting a byte string from its hex representation
+        Convenience method for converting a byte string from its hex 
+        representation
         """
         byte_array = []
         
@@ -45,7 +46,8 @@ class APNs(object):
     @classmethod
     def unpacked_ushort_big_endian(cls, bytes):
         """
-        Returns an unsigned short from a packed big-endian (network) byte array
+        Returns an unsigned short from a packed big-endian (network) byte 
+        array
         """
         return unpack('>H', bytes)[0]
     
@@ -64,7 +66,10 @@ class APNs(object):
         return unpack('>I', bytes)[0]
     
     def __init__(self, use_sandbox=False, cert_file=None, key_file=None):
-        """Set use_sandbox to True to use the sandbox (test) APNs servers. Default is False."""
+        """
+        Set use_sandbox to True to use the sandbox (test) APNs servers. 
+        Default is False.
+        """
         super(APNs, self).__init__()
         self.use_sandbox    = use_sandbox
         self.cert_file  = cert_file
@@ -131,7 +136,8 @@ class APNsConnection(object):
 
 class PayloadAlert(object):
     """docstring for PayloadAlert"""
-    def __init__(self, body, action_loc_key=None, loc_key=None, loc_args=None, launch_image=None):
+    def __init__(self, body, action_loc_key=None, loc_key=None, 
+                 loc_args=None, launch_image=None):
         super(PayloadAlert, self).__init__()
         self.body = body
         self.action_loc_key = action_loc_key
@@ -196,7 +202,9 @@ class FeedbackConnection(APNsConnection):
     """
     def __init__(self, use_sandbox=False, **kwargs):
         super(FeedbackConnection, self).__init__(**kwargs)
-        self.server = ('feedback.push.apple.com', 'feedback.sandbox.push.apple.com')[use_sandbox]
+        self.server = (
+            'feedback.push.apple.com', 
+            'feedback.sandbox.push.apple.com')[use_sandbox]
         self.port = 2196
     
     def _chunks(self):
@@ -209,13 +217,12 @@ class FeedbackConnection(APNsConnection):
     
     def items(self):
         """
-        A generator that yields (token_hex, fail_time) pairs retrieved from the APNs feedback server
+        A generator that yields (token_hex, fail_time) pairs retrieved from 
+        the APNs feedback server
         """
         buff = ''
         for chunk in self._chunks():
-            # print "Reading %u bytes of data into buffer" % len(chunk)
             buff += chunk
-            # print "Buffer length: %u" % len(buff)
             
             # Quit if there's no more data to read
             if not buff: 
@@ -224,25 +231,21 @@ class FeedbackConnection(APNsConnection):
             # Sanity check: after a socket read we should always have at least
             # 6 bytes in the buffer
             if len(buff) < 6:
-                # print "ERROR: buffer length after socket read: %u" % len(buff)
                 break
             
             while len(buff) > 6:
                 token_length = APNs.unpacked_ushort_big_endian(buff[4:6])
                 bytes_to_read = 6 + token_length
                 if len(buff) >= bytes_to_read:
-                    fail_time_unix  = APNs.unpacked_uint_big_endian(buff[0:4])
-                    fail_time       = datetime.utcfromtimestamp(fail_time_unix)
-                    token           = APNs.byte_string_to_hex(buff[6:bytes_to_read])
+                    fail_time_unix = APNs.unpacked_uint_big_endian(buff[0:4])
+                    fail_time = datetime.utcfromtimestamp(fail_time_unix)
+                    token = APNs.byte_string_to_hex(buff[6:bytes_to_read])
                     
-                    # print "%s failed at %s" % (token, str(fail_time))
                     yield (token, fail_time)
                                             
                     # Remove data for current token from buffer
                     buff = buff[bytes_to_read:]
-                    # print "Deleted %u bytes from buffer, %u bytes left" % (bytes_to_read, len(buff))
                 else:
-                    # print "Need %u bytes, only %u left in buffer" % (bytes_to_read, len(buff))
                     # break out of inner while loop - i.e. go and fetch
                     # some more data and append to buffer
                     break
@@ -253,18 +256,26 @@ class GatewayConnection(APNsConnection):
     """
     def __init__(self, use_sandbox=False, **kwargs):
         super(GatewayConnection, self).__init__(**kwargs)
-        self.server = ('gateway.push.apple.com', 'gateway.sandbox.push.apple.com')[use_sandbox]
+        self.server = (
+            'gateway.push.apple.com', 
+            'gateway.sandbox.push.apple.com')[use_sandbox]
         self.port = 2195
-    
-    def send_notification(self, token_hex, payload):
-        """Takes a token as a hex string and a payload as a Python dict and sends the notification"""
-        token_bin           = APNs.byte_string_from_hex(token_hex)
-        token_length_bin    = APNs.packed_ushort_big_endian(len(token_bin))
-        payload_json        = payload.json()
-        payload_length_bin  = APNs.packed_ushort_big_endian(len(payload_json))
         
-        notification = '\0' + token_length_bin + token_bin + payload_length_bin + payload_json
+    def _get_notification(self, token_hex, payload):
+        """
+        Takes a token as a hex string and a payload as a Python dict and sends 
+        the notification
+        """
+        token_bin = APNs.byte_string_from_hex(token_hex)
+        token_length_bin = APNs.packed_ushort_big_endian(len(token_bin))
+        payload_json = payload.json()
+        payload_length_bin = APNs.packed_ushort_big_endian(len(payload_json))
         
-        self.write(notification)
+        notification = ('\0' + token_length_bin + token_bin
+            + payload_length_bin + payload_json)
+        
+        return notification
 
+    def send_notification(self, token_hex, payload):
+        self.write(self._get_notification(token_hex, payload))
 

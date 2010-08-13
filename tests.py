@@ -47,26 +47,49 @@ class TestAPNs(unittest.TestCase):
         apns_prod = APNs(use_sandbox=False)
         
         self.assertEqual(apns_test.gateway_server.port, 2195)
-        self.assertEqual(apns_test.gateway_server.server, 'gateway.sandbox.push.apple.com')
+        self.assertEqual(apns_test.gateway_server.server, 
+            'gateway.sandbox.push.apple.com')
         self.assertEqual(apns_test.feedback_server.port, 2196)
-        self.assertEqual(apns_test.feedback_server.server, 'feedback.sandbox.push.apple.com')
+        self.assertEqual(apns_test.feedback_server.server, 
+            'feedback.sandbox.push.apple.com')
 
         self.assertEqual(apns_prod.gateway_server.port, 2195)
-        self.assertEqual(apns_prod.gateway_server.server, 'gateway.push.apple.com')
+        self.assertEqual(apns_prod.gateway_server.server, 
+            'gateway.push.apple.com')
         self.assertEqual(apns_prod.feedback_server.port, 2196)
-        self.assertEqual(apns_prod.feedback_server.server, 'feedback.push.apple.com')
+        self.assertEqual(apns_prod.feedback_server.server, 
+            'feedback.push.apple.com')
         
     def testGatewayServer(self):
-        pem_file        = TEST_CERTIFICATE
-        apns            = APNs(use_sandbox=True, cert_file=pem_file, key_file=pem_file)
-        gateway_server  = apns.gateway_server
+        pem_file = TEST_CERTIFICATE
+        apns = APNs(use_sandbox=True, cert_file=pem_file, key_file=pem_file)
+        gateway_server = apns.gateway_server
 
         self.assertEqual(gateway_server.cert_file, apns.cert_file)
         self.assertEqual(gateway_server.key_file, apns.key_file)
+        
+        token_hex = 'b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c'
+        payload   = Payload(
+            alert = "Hello World!", 
+            sound = "default", 
+            badge = 4
+        )
+        notification = gateway_server._get_notification(token_hex, payload)
+        
+        expected_length = (
+            1                       # leading null byte
+            + 2                     # length of token as a packed short
+            + len(token_hex) / 2    # length of token as binary string
+            + 2                     # length of payload as a packed short
+            + len(payload.json())   # length of JSON-formatted payload
+        )
+
+        self.assertEqual(len(notification), expected_length)
+        self.assertEqual(notification[0], '\0')
 
     def testFeedbackServer(self):
-        pem_file        = TEST_CERTIFICATE
-        apns            = APNs(use_sandbox=True, cert_file=pem_file, key_file=pem_file)
+        pem_file = TEST_CERTIFICATE
+        apns = APNs(use_sandbox=True, cert_file=pem_file, key_file=pem_file)
         feedback_server = apns.feedback_server
 
         self.assertEqual(feedback_server.cert_file, apns.cert_file)
@@ -90,7 +113,8 @@ class TestAPNs(unittest.TestCase):
         self.assertFalse('loc-args' in d)
         self.assertFalse('launch-image' in d)
 
-        pa = PayloadAlert('foo', action_loc_key='bar', loc_key='wibble', loc_args=['king','kong'], launch_image='wobble')
+        pa = PayloadAlert('foo', action_loc_key='bar', loc_key='wibble', 
+            loc_args=['king','kong'], launch_image='wobble')
         d = pa.dict()
         self.assertEqual(d['body'], 'foo')
         self.assertEqual(d['action-loc-key'], 'bar')
@@ -129,7 +153,8 @@ class TestAPNs(unittest.TestCase):
         self.assertTrue('badge' not in d['aps'])
 
     def testPayloadTooLargeError(self):
-        self.assertRaises(PayloadTooLargeError, Payload, PayloadAlert('.' * 300))
+        self.assertRaises(PayloadTooLargeError, Payload, 
+            PayloadAlert('.' * 300))
 
 if __name__ == '__main__':
     unittest.main()
