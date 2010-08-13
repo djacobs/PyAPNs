@@ -9,6 +9,18 @@ MAX_PAYLOAD_LENGTH = 256
 class APNs(object):
     """A class representing an Apple Push Notification service connection"""
     
+    def __init__(self, use_sandbox=False, cert_file=None, key_file=None):
+        """
+        Set use_sandbox to True to use the sandbox (test) APNs servers. 
+        Default is False.
+        """
+        super(APNs, self).__init__()
+        self.use_sandbox    = use_sandbox
+        self.cert_file  = cert_file
+        self.key_file   = key_file
+        self._feedback_connection = None
+        self._gateway_connection = None
+    
     @classmethod
     def byte_string_to_hex(cls, bstr):
         """
@@ -64,18 +76,6 @@ class APNs(object):
         Returns an unsigned int from a packed big-endian (network) byte array
         """
         return unpack('>I', bytes)[0]
-    
-    def __init__(self, use_sandbox=False, cert_file=None, key_file=None):
-        """
-        Set use_sandbox to True to use the sandbox (test) APNs servers. 
-        Default is False.
-        """
-        super(APNs, self).__init__()
-        self.use_sandbox    = use_sandbox
-        self.cert_file  = cert_file
-        self.key_file   = key_file
-        self._feedback_connection = None
-        self._gateway_connection = None
     
     @property
     def feedback_server(self):
@@ -135,7 +135,6 @@ class APNsConnection(object):
 
 
 class PayloadAlert(object):
-    """docstring for PayloadAlert"""
     def __init__(self, body, action_loc_key=None, loc_key=None, 
                  loc_args=None, launch_image=None):
         super(PayloadAlert, self).__init__()
@@ -158,7 +157,6 @@ class PayloadAlert(object):
         return d
         
 class PayloadTooLargeError(Exception):
-    """docstring for PayloadTooLongException"""
     def __init__(self):
         super(PayloadTooLargeError, self).__init__()
 
@@ -189,7 +187,6 @@ class Payload(object):
         return { 'aps': d }
     
     def json(self):
-        """docstring for json"""
         return simplejson.dumps(self.dict(), separators=(',',':'))
     
     def _check_size(self):
