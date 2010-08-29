@@ -5,7 +5,7 @@ A Python library for interacting with the Apple Push Notification service
 
 ## Sample usage
 
-    from pyapns import APNs, Payload
+    from apns import APNs, Payload
 
     apns = APNs(use_sandbox=True, cert_file='cert.pem', key_file='key.pem')
 

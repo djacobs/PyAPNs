@@ -1,4 +1,4 @@
-from pyapns import *
+from apns import *
 from random import random
 
 import hashlib

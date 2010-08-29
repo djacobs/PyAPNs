@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(
-    name            = 'pyapns',
+    name            = 'apns',
     version         = '1.0',
     py_modules      = ['pyapns'],
     url             = 'http://www.goosoftware.co.uk/',
