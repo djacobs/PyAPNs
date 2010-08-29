@@ -3,6 +3,12 @@
 A Python library for interacting with the Apple Push Notification service 
 (APNs)
 
+## Installation
+
+Either download the source from GitHub or use easy_install:
+
+    $ easy_install apns
+
 ## Sample usage
 
     from apns import APNs, Payload
