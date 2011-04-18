@@ -9,5 +9,5 @@ setup(
     name = 'apns',
     py_modules = ['apns'],
     url = 'http://www.goosoftware.co.uk/',
-    version = '1.0.1',
+    version = '1.0.2',
 )
