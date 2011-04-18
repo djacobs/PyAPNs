@@ -1,8 +1,16 @@
 from datetime import datetime
-from socket import socket, AF_INET, SOCK_STREAM, ssl
+from socket import socket, AF_INET, SOCK_STREAM
 from struct import pack, unpack
 
-import simplejson
+try:
+    from ssl import wrap_socket
+except ImportError:
+    from socket import ssl
+
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 MAX_PAYLOAD_LENGTH = 256
 
@@ -116,7 +124,10 @@ class APNsConnection(object):
         # Establish an SSL connection
         self._socket = socket(AF_INET, SOCK_STREAM)
         self._socket.connect((self.server, self.port))
-        self._ssl = ssl(self._socket, self.key_file, self.cert_file)
+        if wrap_socket:
+            self._ssl = wrap_socket(self._socket, self.key_file, self.cert_file)
+        else:
+            self._ssl = ssl(self._socket, self.key_file, self.cert_file)
     
     def _disconnect(self):
         if self._socket:
@@ -187,7 +198,7 @@ class Payload(object):
         return { 'aps': d }
     
     def json(self):
-        return simplejson.dumps(self.dict(), separators=(',',':'))
+        return json.dumps(self.dict(), separators=(',',':'))
     
     def _check_size(self):
         if len(self.json()) > MAX_PAYLOAD_LENGTH:
