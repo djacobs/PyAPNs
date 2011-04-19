@@ -173,11 +173,12 @@ class PayloadTooLargeError(Exception):
 
 class Payload(object):
     """A class representing an APNs message payload"""
-    def __init__(self, alert=None, badge=None, sound=None):
+    def __init__(self, alert=None, badge=None, sound=None, custom={}):
         super(Payload, self).__init__()
         self.alert = alert
         self.badge = badge
         self.sound = sound
+        self.custom = custom
         self._check_size()
     
     def dict(self):
@@ -195,7 +196,9 @@ class Payload(object):
         if self.badge:
             d['badge'] = int(self.badge)
         
-        return { 'aps': d }
+        d = { 'aps': d }
+        d.update(self.custom)
+        return d
     
     def json(self):
         return json.dumps(self.dict(), separators=(',',':'))

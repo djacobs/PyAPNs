@@ -30,6 +30,11 @@ class. Example:
     alert = PayloadAlert("Hello world!", action_loc_key="Click me")
     payload = Payload(alert=alert, sound="default")
 
+To send custom payload arguments, pass a dictionary to the custom kwarg
+of the Payload constructor.
+
+    payload = Payload(alert="Hello World!", custom={'sekrit_number':123})
+
 ## Further Info
 
 [iOS Reference Library: Local and Push Notification Programming Guide][a1]
