@@ -152,6 +152,14 @@ class TestAPNs(unittest.TestCase):
         self.assertTrue('sound' not in d['aps'])
         self.assertTrue('badge' not in d['aps'])
 
+        # Test custom payload
+        alert_str = 'foobar'
+        custom_dict = {'foo': 'bar'}
+        p = Payload(alert=alert_str, custom=custom_dict)
+        d = p.dict()
+        self.assertEqual(d, {'foo': 'bar', 'aps': {'alert': 'foobar'}})
+
+
     def testPayloadTooLargeError(self):
         self.assertRaises(PayloadTooLargeError, Payload, 
             PayloadAlert('.' * 300))
