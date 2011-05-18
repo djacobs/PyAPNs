@@ -29,16 +29,16 @@ class APNs(object):
         self._feedback_connection = None
         self._gateway_connection = None
     
-    @classmethod
-    def byte_string_to_hex(cls, bstr):
+    @staticmethod
+    def byte_string_to_hex(bstr):
         """
         Convenience method for converting a byte string to its hex
         representation
         """
         return ''.join(['%02x' % i for i in unpack('%iB' % len(bstr), bstr)])
     
-    @classmethod
-    def byte_string_from_hex(cls, hstr):
+    @staticmethod
+    def byte_string_from_hex(hstr):
         """
         Convenience method for converting a byte string from its hex 
         representation
@@ -56,30 +56,30 @@ class APNs(object):
             byte_array.append(byte)
         return pack('%iB' % len(byte_array), *byte_array)
     
-    @classmethod
-    def packed_ushort_big_endian(cls, num):
+    @staticmethod
+    def packed_ushort_big_endian(num):
         """
         Returns an unsigned short in packed big-endian (network) form
         """
         return pack('>H', num)
     
-    @classmethod
-    def unpacked_ushort_big_endian(cls, bytes):
+    @staticmethod
+    def unpacked_ushort_big_endian(bytes):
         """
         Returns an unsigned short from a packed big-endian (network) byte 
         array
         """
         return unpack('>H', bytes)[0]
     
-    @classmethod
-    def packed_uint_big_endian(cls, num):
+    @staticmethod
+    def packed_uint_big_endian(num):
         """
         Returns an unsigned int in packed big-endian (network) form
         """
         return pack('>I', num)
     
-    @classmethod
-    def unpacked_uint_big_endian(cls, bytes):
+    @staticmethod
+    def unpacked_uint_big_endian(bytes):
         """
         Returns an unsigned int from a packed big-endian (network) byte array
         """
