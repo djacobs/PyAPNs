@@ -1,3 +1,4 @@
+from binascii import a2b_hex, b2a_hex
 from datetime import datetime
 from socket import socket, AF_INET, SOCK_STREAM
 from struct import pack, unpack
@@ -28,33 +29,6 @@ class APNs(object):
         self.key_file   = key_file
         self._feedback_connection = None
         self._gateway_connection = None
-    
-    @staticmethod
-    def byte_string_to_hex(bstr):
-        """
-        Convenience method for converting a byte string to its hex
-        representation
-        """
-        return ''.join(['%02x' % i for i in unpack('%iB' % len(bstr), bstr)])
-    
-    @staticmethod
-    def byte_string_from_hex(hstr):
-        """
-        Convenience method for converting a byte string from its hex 
-        representation
-        """
-        byte_array = []
-        
-        # Make sure input string has an even number of hex characters
-        # (2 hex chars = 1 byte). Add leading zero if needed.
-        if len(hstr) % 2:
-            hstr = '0' + hstr
-        
-        for i in range(0, len(hstr)/2):
-            byte_hex = hstr[i*2:i*2+2]
-            byte = int(byte_hex, 16)
-            byte_array.append(byte)
-        return pack('%iB' % len(byte_array), *byte_array)
     
     @staticmethod
     def packed_ushort_big_endian(num):
@@ -250,7 +224,7 @@ class FeedbackConnection(APNsConnection):
                 if len(buff) >= bytes_to_read:
                     fail_time_unix = APNs.unpacked_uint_big_endian(buff[0:4])
                     fail_time = datetime.utcfromtimestamp(fail_time_unix)
-                    token = APNs.byte_string_to_hex(buff[6:bytes_to_read])
+                    token = b2a_hex(buff[6:bytes_to_read])
                     
                     yield (token, fail_time)
                                             
@@ -277,7 +251,7 @@ class GatewayConnection(APNsConnection):
         Takes a token as a hex string and a payload as a Python dict and sends 
         the notification
         """
-        token_bin = APNs.byte_string_from_hex(token_hex)
+        token_bin = a2b_hex(token_hex)
         token_length_bin = APNs.packed_ushort_big_endian(len(token_bin))
         payload_json = payload.json()
         payload_length_bin = APNs.packed_ushort_big_endian(len(payload_json))
