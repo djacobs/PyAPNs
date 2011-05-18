@@ -17,65 +17,65 @@ MAX_PAYLOAD_LENGTH = 256
 
 class APNs(object):
     """A class representing an Apple Push Notification service connection"""
-    
+
     def __init__(self, use_sandbox=False, cert_file=None, key_file=None):
         """
-        Set use_sandbox to True to use the sandbox (test) APNs servers. 
+        Set use_sandbox to True to use the sandbox (test) APNs servers.
         Default is False.
         """
         super(APNs, self).__init__()
-        self.use_sandbox    = use_sandbox
-        self.cert_file  = cert_file
-        self.key_file   = key_file
+        self.use_sandbox = use_sandbox
+        self.cert_file = cert_file
+        self.key_file = key_file
         self._feedback_connection = None
         self._gateway_connection = None
-    
+
     @staticmethod
     def packed_ushort_big_endian(num):
         """
         Returns an unsigned short in packed big-endian (network) form
         """
         return pack('>H', num)
-    
+
     @staticmethod
     def unpacked_ushort_big_endian(bytes):
         """
-        Returns an unsigned short from a packed big-endian (network) byte 
+        Returns an unsigned short from a packed big-endian (network) byte
         array
         """
         return unpack('>H', bytes)[0]
-    
+
     @staticmethod
     def packed_uint_big_endian(num):
         """
         Returns an unsigned int in packed big-endian (network) form
         """
         return pack('>I', num)
-    
+
     @staticmethod
     def unpacked_uint_big_endian(bytes):
         """
         Returns an unsigned int from a packed big-endian (network) byte array
         """
         return unpack('>I', bytes)[0]
-    
+
     @property
     def feedback_server(self):
         if not self._feedback_connection:
             self._feedback_connection = FeedbackConnection(
-                use_sandbox   = self.use_sandbox, 
-                cert_file = self.cert_file, 
-                key_file  = self.key_file
+                use_sandbox = self.use_sandbox,
+                cert_file = self.cert_file,
+                key_file = self.key_file
             )
         return self._feedback_connection
-    
+
     @property
     def gateway_server(self):
         if not self._gateway_connection:
             self._gateway_connection = GatewayConnection(
-                use_sandbox   = self.use_sandbox, 
-                cert_file = self.cert_file, 
-                key_file  = self.key_file
+                use_sandbox = self.use_sandbox,
+                cert_file = self.cert_file,
+                key_file = self.key_file
             )
         return self._gateway_connection
 
@@ -86,14 +86,14 @@ class APNsConnection(object):
     """
     def __init__(self, cert_file=None, key_file=None):
         super(APNsConnection, self).__init__()
-        self.cert_file  = cert_file
-        self.key_file   = key_file
-        self._socket    = None
-        self._ssl       = None
-    
+        self.cert_file = cert_file
+        self.key_file = key_file
+        self._socket = None
+        self._ssl = None
+
     def __del__(self):
         self._disconnect();
-    
+
     def _connect(self):
         # Establish an SSL connection
         self._socket = socket(AF_INET, SOCK_STREAM)
@@ -102,25 +102,25 @@ class APNsConnection(object):
             self._ssl = wrap_socket(self._socket, self.key_file, self.cert_file)
         else:
             self._ssl = ssl(self._socket, self.key_file, self.cert_file)
-    
+
     def _disconnect(self):
         if self._socket:
             self._socket.close()
-    
+
     def _connection(self):
         if not self._ssl:
             self._connect()
         return self._ssl
-    
+
     def read(self, n=None):
         return self._connection().read(n)
-    
+
     def write(self, string):
         return self._connection().write(string)
 
 
 class PayloadAlert(object):
-    def __init__(self, body, action_loc_key=None, loc_key=None, 
+    def __init__(self, body, action_loc_key=None, loc_key=None,
                  loc_args=None, launch_image=None):
         super(PayloadAlert, self).__init__()
         self.body = body
@@ -140,7 +140,7 @@ class PayloadAlert(object):
         if self.launch_image:
             d['launch-image'] = self.launch_image
         return d
-        
+
 class PayloadTooLargeError(Exception):
     def __init__(self):
         super(PayloadTooLargeError, self).__init__()
@@ -154,7 +154,7 @@ class Payload(object):
         self.sound = sound
         self.custom = custom
         self._check_size()
-    
+
     def dict(self):
         """Returns the payload as a regular Python dictionary"""
         d = {}
@@ -169,18 +169,18 @@ class Payload(object):
             d['sound'] = self.sound
         if self.badge:
             d['badge'] = int(self.badge)
-        
+
         d = { 'aps': d }
         d.update(self.custom)
         return d
-    
+
     def json(self):
         return json.dumps(self.dict(), separators=(',',':'))
-    
+
     def _check_size(self):
         if len(self.json()) > MAX_PAYLOAD_LENGTH:
             raise PayloadTooLargeError()
-        
+
 class FeedbackConnection(APNsConnection):
     """
     A class representing a connection to the APNs Feedback server
@@ -188,10 +188,10 @@ class FeedbackConnection(APNsConnection):
     def __init__(self, use_sandbox=False, **kwargs):
         super(FeedbackConnection, self).__init__(**kwargs)
         self.server = (
-            'feedback.push.apple.com', 
+            'feedback.push.apple.com',
             'feedback.sandbox.push.apple.com')[use_sandbox]
         self.port = 2196
-    
+
     def _chunks(self):
         BUF_SIZE = 4096
         while 1:
@@ -199,25 +199,25 @@ class FeedbackConnection(APNsConnection):
             yield data
             if not data:
                 break
-    
+
     def items(self):
         """
-        A generator that yields (token_hex, fail_time) pairs retrieved from 
+        A generator that yields (token_hex, fail_time) pairs retrieved from
         the APNs feedback server
         """
         buff = ''
         for chunk in self._chunks():
             buff += chunk
-            
+
             # Quit if there's no more data to read
-            if not buff: 
+            if not buff:
                 break
-            
+
             # Sanity check: after a socket read we should always have at least
             # 6 bytes in the buffer
             if len(buff) < 6:
                 break
-            
+
             while len(buff) > 6:
                 token_length = APNs.unpacked_ushort_big_endian(buff[4:6])
                 bytes_to_read = 6 + token_length
@@ -225,9 +225,9 @@ class FeedbackConnection(APNsConnection):
                     fail_time_unix = APNs.unpacked_uint_big_endian(buff[0:4])
                     fail_time = datetime.utcfromtimestamp(fail_time_unix)
                     token = b2a_hex(buff[6:bytes_to_read])
-                    
+
                     yield (token, fail_time)
-                                            
+
                     # Remove data for current token from buffer
                     buff = buff[bytes_to_read:]
                 else:
@@ -242,23 +242,23 @@ class GatewayConnection(APNsConnection):
     def __init__(self, use_sandbox=False, **kwargs):
         super(GatewayConnection, self).__init__(**kwargs)
         self.server = (
-            'gateway.push.apple.com', 
+            'gateway.push.apple.com',
             'gateway.sandbox.push.apple.com')[use_sandbox]
         self.port = 2195
-        
+
     def _get_notification(self, token_hex, payload):
         """
-        Takes a token as a hex string and a payload as a Python dict and sends 
+        Takes a token as a hex string and a payload as a Python dict and sends
         the notification
         """
         token_bin = a2b_hex(token_hex)
         token_length_bin = APNs.packed_ushort_big_endian(len(token_bin))
         payload_json = payload.json()
         payload_length_bin = APNs.packed_ushort_big_endian(len(payload_json))
-        
+
         notification = ('\0' + token_length_bin + token_bin
             + payload_length_bin + payload_json)
-        
+
         return notification
 
     def send_notification(self, token_hex, payload):
