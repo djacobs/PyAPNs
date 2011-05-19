@@ -181,6 +181,12 @@ class Payload(object):
         if len(self.json()) > MAX_PAYLOAD_LENGTH:
             raise PayloadTooLargeError()
 
+    def __repr__(self):
+        attrs = ("alert", "badge", "sound", "custom")
+        args = ", ".join(["%s=%r" % (n, getattr(self, n)) for n in attrs])
+        return "%s(%s)" % (self.__class__.__name__, args)
+
+
 class FeedbackConnection(APNsConnection):
     """
     A class representing a connection to the APNs Feedback server
