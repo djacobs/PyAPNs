@@ -1,4 +1,5 @@
 from apns import *
+from binascii import a2b_hex
 from random import random
 
 import hashlib
@@ -19,7 +20,7 @@ def mock_chunks_generator():
     data = ''
     
     for t in mock_tokens:
-        token_bin       = APNs.byte_string_from_hex(t)
+        token_bin       = a2b_hex(t)
         token_length    = len(token_bin)
         
         data += APNs.packed_uint_big_endian(int(time.time()))
