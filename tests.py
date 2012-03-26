@@ -164,15 +164,21 @@ class TestAPNs(unittest.TestCase):
 
 
     def testPayloadTooLargeError(self):
+        # The maximum size of the JSON payload is MAX_PAYLOAD_LENGTH 
+        # bytes. First determine how many bytes this allows us in the
+        # raw payload (i.e. before JSON serialisation)
+        json_overhead_bytes = len(Payload('.').json()) - 1
+        max_raw_payload_bytes = MAX_PAYLOAD_LENGTH - json_overhead_bytes
+
         # Test ascii characters payload
-        Payload(PayloadAlert('.'*227))
-        self.assertRaises(PayloadTooLargeError, Payload,
-            PayloadAlert('.'*228))
+        Payload('.' * max_raw_payload_bytes)
+        self.assertRaises(PayloadTooLargeError, Payload, 
+            '.' * (max_raw_payload_bytes + 1))
 
         # Test unicode 2-byte characters payload
-        Payload(PayloadAlert(u'\u0100'*113))
+        Payload(u'\u0100' * int(max_raw_payload_bytes / 2))
         self.assertRaises(PayloadTooLargeError, Payload,
-            PayloadAlert(u'\u0100' * 114))
+            u'\u0100' * (int(max_raw_payload_bytes / 2) + 1))
 
 if __name__ == '__main__':
     unittest.main()
