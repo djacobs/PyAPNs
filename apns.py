@@ -1,8 +1,8 @@
 # PyAPNs was developed by Simon Whitaker <simon@goosoftware.co.uk>
 # Source available at https://github.com/simonwhitaker/PyAPNs
-# 
+#
 # PyAPNs is distributed under the terms of the MIT license.
-# 
+#
 # Copyright (c) 2011 Goo Software Ltd
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -11,10 +11,10 @@
 # use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
 # of the Software, and to permit persons to whom the Software is furnished to do
 # so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -200,7 +200,7 @@ class Payload(object):
         return d
 
     def json(self):
-        return json.dumps(self.dict(), separators=(',',':'))
+        return json.dumps(self.dict(), separators=(',',':'), ensure_ascii=False).encode('utf-8')
 
     def _check_size(self):
         if len(self.json()) > MAX_PAYLOAD_LENGTH:
