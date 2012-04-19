@@ -147,6 +147,13 @@ class TestAPNs(unittest.TestCase):
         self.assertTrue('alert' not in d['aps'])
         self.assertTrue('sound' not in d['aps'])
 
+        # Payload with just badge removal
+        p = Payload(badge=0)
+        d = p.dict()
+        self.assertTrue('badge' in d['aps'])
+        self.assertTrue('alert' not in d['aps'])
+        self.assertTrue('sound' not in d['aps'])
+
         # Test plain string alerts
         alert_str = 'foobar'
         p = Payload(alert=alert_str)
