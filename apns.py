@@ -192,7 +192,7 @@ class Payload(object):
                 d['alert'] = self.alert
         if self.sound:
             d['sound'] = self.sound
-        if self.badge:
+        if self.badge is not None:
             d['badge'] = int(self.badge)
 
         d = { 'aps': d }
