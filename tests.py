@@ -9,17 +9,29 @@ import os
 import time
 import unittest
 
+try:
+    unicode
+    # Python 2
+    def u(s):
+        return unicode(s, 'unicode_escape')
+except NameError:
+    # Python 3
+    def u(s):
+        return s
+
 TEST_CERTIFICATE = "certificate.pem" # replace with path to test certificate
 
 NUM_MOCK_TOKENS = 10
 mock_tokens = []
 for i in range(0, NUM_MOCK_TOKENS):
-    mock_tokens.append(hashlib.sha256("%.12f" % random()).hexdigest())
+    random_byte_str = ("%.12f" % random()).encode('ascii')
+    mock_token = hashlib.sha256(random_byte_str).hexdigest().encode('ascii')
+    mock_tokens.append(mock_token)
 
 def mock_chunks_generator():
     BUF_SIZE = 64
     # Create fake data feed
-    data = ''
+    data = b''
 
     for t in mock_tokens:
         token_bin       = a2b_hex(t)
@@ -88,7 +100,7 @@ class TestAPNs(unittest.TestCase):
         )
 
         self.assertEqual(len(notification), expected_length)
-        self.assertEqual(notification[0], '\0')
+        self.assertEqual(notification[0:1].decode('utf-8')[0], '\0')
 
     def testFeedbackServer(self):
         pem_file = TEST_CERTIFICATE
@@ -183,9 +195,9 @@ class TestAPNs(unittest.TestCase):
             '.' * (max_raw_payload_bytes + 1))
 
         # Test unicode 2-byte characters payload
-        Payload(u'\u0100' * int(max_raw_payload_bytes / 2))
+        Payload(u('\u0100') * int(max_raw_payload_bytes / 2))
         self.assertRaises(PayloadTooLargeError, Payload,
-            u'\u0100' * (int(max_raw_payload_bytes / 2) + 1))
+            u('\u0100') * (int(max_raw_payload_bytes / 2) + 1))
 
 if __name__ == '__main__':
     unittest.main()

@@ -236,7 +236,7 @@ class FeedbackConnection(APNsConnection):
         A generator that yields (token_hex, fail_time) pairs retrieved from
         the APNs feedback server
         """
-        buff = ''
+        buff = b''
         for chunk in self._chunks():
             buff += chunk
 
@@ -282,12 +282,12 @@ class GatewayConnection(APNsConnection):
         Takes a token as a hex string and a payload as a Python dict and sends
         the notification
         """
-        token_bin = a2b_hex(token_hex)
+        token_bin = a2b_hex(token_hex.encode('ascii'))
         token_length_bin = APNs.packed_ushort_big_endian(len(token_bin))
         payload_json = payload.json()
         payload_length_bin = APNs.packed_ushort_big_endian(len(payload_json))
 
-        notification = ('\0' + token_length_bin + token_bin
+        notification = (b'\0' + token_length_bin + token_bin
             + payload_length_bin + payload_json)
 
         return notification
