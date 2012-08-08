@@ -4,4 +4,4 @@ python:
   - "2.6"
   - "2.5"
 # command to run tests, e.g. python setup.py test
-script: "python test.py"
+script: "python tests.py"
