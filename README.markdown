@@ -41,6 +41,10 @@ of the Payload constructor.
 payload = Payload(alert="Hello World!", custom={'sekrit_number':123})
 ```
 
+## Travis Build Status
+
+[![Build Status](https://secure.travis-ci.org/simonwhitaker/PyAPNs.png?branch=master)](http://travis-ci.org/simonwhitaker/PyAPNs)
+
 ## Further Info
 
 [iOS Reference Library: Local and Push Notification Programming Guide][a1]
