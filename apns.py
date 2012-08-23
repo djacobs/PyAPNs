@@ -31,7 +31,7 @@ from struct import pack, unpack
 try:
     from ssl import wrap_socket
 except ImportError:
-    from socket import ssl
+    from socket import ssl as wrap_socket
 
 try:
     import json
@@ -123,10 +123,7 @@ class APNsConnection(object):
         # Establish an SSL connection
         self._socket = socket(AF_INET, SOCK_STREAM)
         self._socket.connect((self.server, self.port))
-        if wrap_socket:
-            self._ssl = wrap_socket(self._socket, self.key_file, self.cert_file)
-        else:
-            self._ssl = ssl(self._socket, self.key_file, self.cert_file)
+        self._ssl = wrap_socket(self._socket, self.key_file, self.cert_file)
 
     def _disconnect(self):
         if self._socket:
