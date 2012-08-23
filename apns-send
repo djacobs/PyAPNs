@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+
+from apns import APNs, Payload
+
+import optparse
+
+parser = optparse.OptionParser()
+
+parser.add_option("-c", "--certificate-file",
+                  dest="certificate_file",
+                  help="Path to .pem certificate file")
+
+parser.add_option("-p", "--push-token",
+                  dest="push_token",
+                  help="Push token")
+
+parser.add_option("-m", "--message",
+                  dest="message",
+                  help="Message")
+
+options, args = parser.parse_args()
+
+if options.certificate_file is None:
+    parser.error('Must provide --certificate-file')
+
+if options.push_token is None:
+    parser.error('Must provide --push-token')
+
+if options.message is None:
+    parser.error('Must provide --message')
+
+apns = APNs(cert_file=options.certificate_file)
+
+# Send a notification
+payload = Payload(alert=options.message, sound="default", badge=1)
+apns.gateway_server.send_notification(options.push_token, payload)
+print("Sent push message to APNS gateway.")
