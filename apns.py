@@ -50,7 +50,6 @@ class APNs(object):
         """
         super(APNs, self).__init__()
         self.use_sandbox = use_sandbox
-        self.use_newsstand = use_newsstand
         self.cert_file = cert_file
         self.key_file = key_file
         self._feedback_connection = None
