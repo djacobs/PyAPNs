@@ -24,7 +24,9 @@
 # SOFTWARE.
 
 from binascii import a2b_hex, b2a_hex
-from datetime import datetime
+from datetime import datetime, timedelta
+from time import mktime
+from random import getrandbits
 from socket import socket, AF_INET, SOCK_STREAM
 from struct import pack, unpack
 
@@ -263,6 +265,30 @@ class FeedbackConnection(APNsConnection):
                     # some more data and append to buffer
                     break
 
+class UnknownResponse(Exception):
+    def __init__(self):
+        super(UnknownResponse, self).__init__()
+
+class UnknownError(Exception):
+    def __init__(self):
+        super(UnknownError, self).__init__()
+
+class ProcessingError(Exception):
+    def __init__(self):
+        super(ProcessingError, self).__init__()
+
+class InvalidTokenSizeError(Exception):
+    def __init__(self):
+        super(InvalidTokenSizeError, self).__init__()
+
+class InvalidPayloadSizeError(Exception):
+    def __init__(self):
+        super(InvalidPayloadSizeError, self).__init__()
+
+class InvalidTokenError(Exception):
+    def __init__(self):
+        super(InvalidTokenError, self).__init__()
+
 class GatewayConnection(APNsConnection):
     """
     A class that represents a connection to the APNs gateway server
@@ -274,21 +300,44 @@ class GatewayConnection(APNsConnection):
             'gateway.sandbox.push.apple.com')[use_sandbox]
         self.port = 2195
 
-    def _get_notification(self, token_hex, payload):
+    def _get_notification(self, token_hex, payload, identifier, expiry):
         """
         Takes a token as a hex string and a payload as a Python dict and sends
         the notification
         """
+        identifier_bin = identifier[:4]
+        expiry_bin = APNs.packed_uint_big_endian(int(mktime(expiry.timetuple())))
         token_bin = a2b_hex(token_hex)
         token_length_bin = APNs.packed_ushort_big_endian(len(token_bin))
         payload_json = payload.json()
         payload_length_bin = APNs.packed_ushort_big_endian(len(payload_json))
 
-        notification = ('\0' + token_length_bin + token_bin
+        notification = ('\x01' + identifier_bin + expiry_bin + token_length_bin + token_bin
             + payload_length_bin + payload_json)
 
         return notification
 
-    def send_notification(self, token_hex, payload):
-        self.write(self._get_notification(token_hex, payload))
+    def send_notification(self, token_hex, payload, expiry=None):
+        if expiry is None:
+            expiry = datetime.now() + timedelta(30)
+        
+        identifier = pack('>I', getrandbits(32))
+        self.write(self._get_notification(token_hex, payload, identifier, expiry))
+        
+        error_response = self.read(6)
+        if error_response != '':
+            command = error_response[0]
+            status = ord(error_response[1])
+            response_identifier = error_response[2:6]
+            
+            if command != '\x08' or response_identifier != identifier:
+                raise UnknownResponse()
+            
+            if status == 0:
+                return
+            
+            raise {1: ProcessingError,
+                   5: InvalidTokenSizeError,
+                   7: InvalidPayloadSizeError,
+                   8: InvalidTokenError}.get(status, UnknownError)()
 
