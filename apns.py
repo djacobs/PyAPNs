@@ -25,7 +25,7 @@
 
 from binascii import a2b_hex, b2a_hex
 from datetime import datetime
-from socket import socket, AF_INET, SOCK_STREAM
+from socket import socket, AF_INET, SOCK_STREAM, error
 from struct import pack, unpack
 
 try:
@@ -127,7 +127,13 @@ class APNsConnection(object):
 
     def _disconnect(self):
         if self._socket:
-            self._socket.close()
+            try:
+                self._socket.close()
+            except error:
+                pass
+            finally:
+                self._socket = None
+                self._ssl = None
 
     def _connection(self):
         if not self._ssl:
@@ -135,10 +141,18 @@ class APNsConnection(object):
         return self._ssl
 
     def read(self, n=None):
-        return self._connection().read(n)
+        try:
+            return self._connection().read(n)
+        except:
+            self._disconnect()
+            raise
 
     def write(self, string):
-        return self._connection().write(string)
+        try:
+            return self._connection().write(string)
+        except:
+            self._disconnect()
+            raise
 
 
 class PayloadAlert(object):
