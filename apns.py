@@ -164,8 +164,16 @@ class PayloadAlert(object):
         return d
 
 class PayloadTooLargeError(Exception):
-    def __init__(self):
+    def __init__(self, size):
         super(PayloadTooLargeError, self).__init__()
+        self._size = size
+    
+    @property
+    def size(self):
+        return self._size
+    
+    def __len__(self):
+        return self.size
 
 class Payload(object):
     """A class representing an APNs message payload"""
@@ -200,8 +208,9 @@ class Payload(object):
         return json.dumps(self.dict(), separators=(',',':'), ensure_ascii=False).encode('utf-8')
 
     def _check_size(self):
-        if len(self.json()) > MAX_PAYLOAD_LENGTH:
-            raise PayloadTooLargeError()
+        size = len(self.json())
+        if size > MAX_PAYLOAD_LENGTH:
+            raise PayloadTooLargeError(size)
 
     def __repr__(self):
         attrs = ("alert", "badge", "sound", "custom")
