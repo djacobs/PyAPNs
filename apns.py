@@ -43,15 +43,25 @@ MAX_PAYLOAD_LENGTH = 256
 class APNs(object):
     """A class representing an Apple Push Notification service connection"""
 
-    def __init__(self, use_sandbox=False, cert_file=None, key_file=None):
+    feedback = ('feedback.push.apple.com', 'feedback.sandbox.push.apple.com')
+    gateway = ('gateway.push.apple.com', 'gateway.sandbox.push.apple.com')
+
+    def __init__(self, use_sandbox=False, cert_file=None, key_file=None,
+                                          host=None, port=2195,
+                                          feedback_host=None, feedback_port=2196):
         """
         Set use_sandbox to True to use the sandbox (test) APNs servers.
         Default is False.
         """
-        super(APNs, self).__init__()
-        self.use_sandbox = use_sandbox
         self.cert_file = cert_file
         self.key_file = key_file
+
+        self.host = host if host else self.gateway[use_sandbox]
+        self.port = port
+
+        self.feedback_host = feedback_host if feedback_host else self.feedback[use_sandbox]
+        self.feedback_port = feedback_port
+
         self._feedback_connection = None
         self._gateway_connection = None
 
@@ -87,8 +97,10 @@ class APNs(object):
     @property
     def feedback_server(self):
         if not self._feedback_connection:
+
             self._feedback_connection = FeedbackConnection(
-                use_sandbox = self.use_sandbox,
+                host = self.feedback_host,
+                port = self.feedback_port,
                 cert_file = self.cert_file,
                 key_file = self.key_file
             )
@@ -98,7 +110,8 @@ class APNs(object):
     def gateway_server(self):
         if not self._gateway_connection:
             self._gateway_connection = GatewayConnection(
-                use_sandbox = self.use_sandbox,
+                host = self.host,
+                port = self.port,
                 cert_file = self.cert_file,
                 key_file = self.key_file
             )
@@ -110,7 +123,6 @@ class APNsConnection(object):
     A generic connection class for communicating with the APNs
     """
     def __init__(self, cert_file=None, key_file=None):
-        super(APNsConnection, self).__init__()
         self.cert_file = cert_file
         self.key_file = key_file
         self._socket = None
@@ -144,7 +156,6 @@ class APNsConnection(object):
 class PayloadAlert(object):
     def __init__(self, body, action_loc_key=None, loc_key=None,
                  loc_args=None, launch_image=None):
-        super(PayloadAlert, self).__init__()
         self.body = body
         self.action_loc_key = action_loc_key
         self.loc_key = loc_key
@@ -170,7 +181,6 @@ class PayloadTooLargeError(Exception):
 class Payload(object):
     """A class representing an APNs message payload"""
     def __init__(self, alert=None, badge=None, sound=None, custom={}):
-        super(Payload, self).__init__()
         self.alert = alert
         self.badge = badge
         self.sound = sound
@@ -213,12 +223,10 @@ class FeedbackConnection(APNsConnection):
     """
     A class representing a connection to the APNs Feedback server
     """
-    def __init__(self, use_sandbox=False, **kwargs):
+    def __init__(self, host, port, **kwargs):
         super(FeedbackConnection, self).__init__(**kwargs)
-        self.server = (
-            'feedback.push.apple.com',
-            'feedback.sandbox.push.apple.com')[use_sandbox]
-        self.port = 2196
+        self.server = host
+        self.port = port
 
     def _chunks(self):
         BUF_SIZE = 4096
@@ -267,12 +275,10 @@ class GatewayConnection(APNsConnection):
     """
     A class that represents a connection to the APNs gateway server
     """
-    def __init__(self, use_sandbox=False, **kwargs):
+    def __init__(self, host, port, **kwargs):
         super(GatewayConnection, self).__init__(**kwargs)
-        self.server = (
-            'gateway.push.apple.com',
-            'gateway.sandbox.push.apple.com')[use_sandbox]
-        self.port = 2195
+        self.server = host
+        self.port = port
 
     def _get_notification(self, token_hex, payload):
         """

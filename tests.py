@@ -5,7 +5,6 @@ from binascii import a2b_hex
 from random import random
 
 import hashlib
-import os
 import time
 import unittest
 
