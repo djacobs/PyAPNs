@@ -25,25 +25,37 @@
 
 from binascii import a2b_hex, b2a_hex
 from datetime import datetime
-from socket import socket, AF_INET, SOCK_STREAM
+from time import mktime
+from socket import socket, AF_INET, SOCK_STREAM, timeout, error as socket_error
 from struct import pack, unpack
+
+import select
+import errno
+
+support_enhanced = True
 
 try:
     from ssl import wrap_socket
+    from ssl import SSLError, SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE
 except ImportError:
     from socket import ssl as wrap_socket
+    support_enhanced = False
 
 try:
     import json
 except ImportError:
     import simplejson as json
 
+from apnserrors import *
+
 MAX_PAYLOAD_LENGTH = 256
+TIMEOUT = 60
+ERROR_RESPONSE_LENGTH = 6
 
 class APNs(object):
     """A class representing an Apple Push Notification service connection"""
 
-    def __init__(self, use_sandbox=False, cert_file=None, key_file=None):
+    def __init__(self, use_sandbox=False, cert_file=None, key_file=None, enhanced=False):
         """
         Set use_sandbox to True to use the sandbox (test) APNs servers.
         Default is False.
@@ -52,9 +64,17 @@ class APNs(object):
         self.use_sandbox = use_sandbox
         self.cert_file = cert_file
         self.key_file = key_file
+        self.enhanced = enhanced and support_enhanced
         self._feedback_connection = None
         self._gateway_connection = None
 
+    @staticmethod
+    def unpacked_uchar_big_endian(byte):
+        """
+        Returns an unsigned char from a packed big-endian (network) byte
+        """
+        return unpack('>B', byte)[0]
+    
     @staticmethod
     def packed_ushort_big_endian(num):
         """
@@ -100,7 +120,8 @@ class APNs(object):
             self._gateway_connection = GatewayConnection(
                 use_sandbox = self.use_sandbox,
                 cert_file = self.cert_file,
-                key_file = self.key_file
+                key_file = self.key_file,
+                enhanced = self.enhanced
             )
         return self._gateway_connection
 
@@ -109,10 +130,11 @@ class APNsConnection(object):
     """
     A generic connection class for communicating with the APNs
     """
-    def __init__(self, cert_file=None, key_file=None):
+    def __init__(self, cert_file=None, key_file=None, enhanced=False):
         super(APNsConnection, self).__init__()
         self.cert_file = cert_file
         self.key_file = key_file
+        self.enhanced = enhanced
         self._socket = None
         self._ssl = None
 
@@ -123,11 +145,29 @@ class APNsConnection(object):
         # Establish an SSL connection
         self._socket = socket(AF_INET, SOCK_STREAM)
         self._socket.connect((self.server, self.port))
-        self._ssl = wrap_socket(self._socket, self.key_file, self.cert_file)
+
+        if self.enhanced:
+            self._ssl = wrap_socket(self._socket, self.key_file, self.cert_file,
+                                    do_handshake_on_connect=False)
+            self._ssl.setblocking(0)
+            while True:
+                try:
+                    self._ssl.do_handshake()
+                    break
+                except SSLError, err:
+                    if SSL_ERROR_WANT_READ == err.args[0]:
+                        select.select([self._ssl], [], [])
+                    elif SSL_ERROR_WANT_WRITE == err.args[0]:
+                        select.select([], [self._ssl], [])
+                    else:
+                        raise
+        else:
+            self._ssl = wrap_socket(self._socket, self.key_file, self.cert_file)
 
     def _disconnect(self):
         if self._socket:
             self._socket.close()
+            self._ssl = None
 
     def _connection(self):
         if not self._ssl:
@@ -135,11 +175,69 @@ class APNsConnection(object):
         return self._ssl
 
     def read(self, n=None):
-        return self._connection().read(n)
+        return self._connection().recv(n)
 
+    def recvall(self, n):
+        data = ""
+        while True:
+            more = self._connection().recv(n - len(data))
+            data += more
+            if len(data) >= n:
+                break
+            rlist, _, _ = select.select([self._connection()], [], [], TIMEOUT)
+            if not rlist:
+                raise timeout
+
+        return data
+            
     def write(self, string):
-        return self._connection().write(string)
+        if self.enhanced: # nonblocking socket
+            rlist, _, _ = select.select([self._connection()], [], [], 0)
 
+            if rlist: # there's error response from APNs
+                buff = self.recvall(ERROR_RESPONSE_LENGTH)
+                if len(buff) != ERROR_RESPONSE_LENGTH:
+                    return None
+
+                command = APNs.unpacked_uchar_big_endian(buff[0])
+
+                if 8 != command:
+                    self._disconnect()
+                    raise UnknownError(0)
+
+                status = APNs.unpacked_uchar_big_endian(buff[1])
+                identifier = APNs.unpacked_uint_big_endian(buff[2:6])
+
+                self._disconnect()
+                
+                raise { 1: ProcessingError,
+                        2: MissingDeviceTokenError,
+                        3: MissingTopicError,
+                        4: MissingPayloadError,
+                        5: InvalidTokenSizeError,
+                        6: InvalidTopicSizeError,
+                        7: InvalidPayloadSizeError,
+                        8: InvalidTokenError }.get(status, UnknownError)(identifier)
+
+            _, wlist, _ = select.select([], [self._connection()], [], TIMEOUT)
+            if wlist:
+                return self._connection().sendall(string)
+            else:
+                self._disconnect()
+                raise timeout
+        
+        else: # not-enhanced format using blocking socket
+            try:
+                return self._connection().write(string)
+            except socket_error, err:
+                try:
+                    if errno.EPIPE == err.errno:
+                        self._disconnect()
+                except AttributeError:
+                    if errno.EPIPE == err.args[0]:
+                        self._disconnect()
+                finally:
+                    raise err
 
 class PayloadAlert(object):
     def __init__(self, body, action_loc_key=None, loc_key=None,
@@ -162,10 +260,6 @@ class PayloadAlert(object):
         if self.launch_image:
             d['launch-image'] = self.launch_image
         return d
-
-class PayloadTooLargeError(Exception):
-    def __init__(self):
-        super(PayloadTooLargeError, self).__init__()
 
 class Payload(object):
     """A class representing an APNs message payload"""
@@ -285,10 +379,34 @@ class GatewayConnection(APNsConnection):
         payload_length_bin = APNs.packed_ushort_big_endian(len(payload_json))
 
         notification = ('\0' + token_length_bin + token_bin
-            + payload_length_bin + payload_json)
+                        + payload_length_bin + payload_json)
 
         return notification
 
-    def send_notification(self, token_hex, payload):
-        self.write(self._get_notification(token_hex, payload))
+    def _get_enhanced_notification(self, token_hex, payload, identifier, expiry):
+        """
+        Takes a token as a hex string and a payload as a Python dict and sends
+        the notification in the enhanced format
+        """
+        token_bin = a2b_hex(token_hex)
+        token_length_bin = APNs.packed_ushort_big_endian(len(token_bin))
+        payload_json = payload.json()
+        payload_length_bin = APNs.packed_ushort_big_endian(len(payload_json))
+        identifier_bin = APNs.packed_uint_big_endian(identifier)
 
+        expiry_int = int(mktime(expiry.timetuple())) if isinstance(expiry, datetime) \
+            else int(expiry)
+            
+        expiry_bin = APNs.packed_uint_big_endian(expiry_int)
+
+        notification = ('\1' + identifier_bin + expiry_bin + token_length_bin + token_bin
+                        + payload_length_bin + payload_json)
+
+        return notification
+    
+    def send_notification(self, token_hex, payload, identifier=0, expiry=0):
+        if self.enhanced:
+            self.write(self._get_enhanced_notification(token_hex, payload, identifier,
+                                                       expiry))
+        else:
+            self.write(self._get_notification(token_hex, payload))

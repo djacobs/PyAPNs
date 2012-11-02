@@ -3,6 +3,7 @@
 from apns import *
 from binascii import a2b_hex
 from random import random
+from datetime import datetime, timedelta
 
 import hashlib
 import os
@@ -89,6 +90,37 @@ class TestAPNs(unittest.TestCase):
 
         self.assertEqual(len(notification), expected_length)
         self.assertEqual(notification[0], '\0')
+
+    def testEnhancedGatewayServer(self):
+        pem_file = TEST_CERTIFICATE
+        apns = APNs(use_sandbox=True, cert_file=pem_file, key_file=pem_file, enhanced=True)
+        gateway_server = apns.gateway_server
+
+        self.assertEqual(gateway_server.cert_file, apns.cert_file)
+        self.assertEqual(gateway_server.key_file, apns.key_file)
+
+        token_hex = 'b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c'
+        payload   = Payload(
+            alert = "Hello World!",
+            sound = "default",
+            badge = 4
+        )
+        expiry = datetime.utcnow() + timedelta(30)
+        notification = gateway_server._get_enhanced_notification(token_hex, payload, 0,
+                                                                 expiry)
+
+        expected_length = (
+            1                       # leading null byte
+            + 4                     # identifier as a packed int
+            + 4                     # expiry as a packed int
+            + 2                     # length of token as a packed short
+            + len(token_hex) / 2    # length of token as binary string
+            + 2                     # length of payload as a packed short
+            + len(payload.json())   # length of JSON-formatted payload
+        )
+
+        self.assertEqual(len(notification), expected_length)
+        self.assertEqual(notification[0], '\1')
 
     def testFeedbackServer(self):
         pem_file = TEST_CERTIFICATE
