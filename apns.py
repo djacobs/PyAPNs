@@ -208,6 +208,11 @@ class Payload(object):
         args = ", ".join(["%s=%r" % (n, getattr(self, n)) for n in attrs])
         return "%s(%s)" % (self.__class__.__name__, args)
 
+class PassbookPayload(Payload):
+    def __init__(self):
+        pass
+    def json(self):
+        return json.dumps({})
 
 class FeedbackConnection(APNsConnection):
     """
