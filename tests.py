@@ -3,6 +3,7 @@
 from apns import *
 from binascii import a2b_hex
 from random import random
+from datetime import datetime
 
 import hashlib
 import os
@@ -77,10 +78,14 @@ class TestAPNs(unittest.TestCase):
             sound = "default",
             badge = 4
         )
-        notification = gateway_server._get_notification(token_hex, payload)
+        identifier = 'abcd'
+        expiry = datetime(2000, 01, 01, 00, 00, 00)
+        notification = gateway_server._get_notification(token_hex, payload, identifier, expiry)
 
         expected_length = (
-            1                       # leading null byte
+            1                       # leading command byte
+            + 4                     # Identifier as a 4 bytes buffer
+            + 4                     # Expiry timestamp as a packed integer
             + 2                     # length of token as a packed short
             + len(token_hex) / 2    # length of token as binary string
             + 2                     # length of payload as a packed short
@@ -88,7 +93,7 @@ class TestAPNs(unittest.TestCase):
         )
 
         self.assertEqual(len(notification), expected_length)
-        self.assertEqual(notification[0], '\0')
+        self.assertEqual(notification[0], '\x01') # Enhanched format command byte
 
     def testFeedbackServer(self):
         pem_file = TEST_CERTIFICATE
