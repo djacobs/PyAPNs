@@ -136,7 +136,7 @@ class APNsConnection(object):
             except:
                 raise
 
-		# Fallback for 'SSLError: _ssl.c:489: The handshake operation timed out'
+        # Fallback for 'SSLError: _ssl.c:489: The handshake operation timed out'
         for i in xrange(3):
             try:
                 self._ssl = wrap_socket(self._socket, self.key_file, self.cert_file)
