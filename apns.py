@@ -33,6 +33,8 @@ try:
 except ImportError:
     from socket import ssl as wrap_socket
 
+from _ssl import SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE
+
 try:
     import json
 except ImportError:
@@ -121,9 +123,31 @@ class APNsConnection(object):
 
     def _connect(self):
         # Establish an SSL connection
-        self._socket = socket(AF_INET, SOCK_STREAM)
-        self._socket.connect((self.server, self.port))
-        self._ssl = wrap_socket(self._socket, self.key_file, self.cert_file)
+        
+        # Fallback for socket timeout.
+        for i in xrange(3):
+            try:
+                self._socket = socket(AF_INET, SOCK_STREAM)
+                self._socket.settimeout(self.timeout)
+                self._socket.connect((self.server, self.port))
+                break
+            except socket.timeout:
+                pass
+            except:
+                raise
+
+		# Fallback for 'SSLError: _ssl.c:489: The handshake operation timed out'
+        for i in xrange(3):
+            try:
+                self._ssl = wrap_socket(self._socket, self.key_file, self.cert_file)
+                break
+            except SSLError, ex:
+                if ex.args[0] == SSL_ERROR_WANT_READ:
+                    sys.exc_clear()
+                elif ex.args[0] == SSL_ERROR_WANT_WRITE:
+                    sys.exc_clear()
+                else:
+                   raise
 
     def _disconnect(self):
         if self._socket:
