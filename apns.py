@@ -288,8 +288,8 @@ class GatewayConnection(APNsConnection):
         payload_length_bin = APNs.packed_ushort_big_endian(len(payload_json))
 
         zero_byte = '\0'
-	if sys.version_info[0] != 2:
-	    zero_byte = bytes(zero_byte, 'utf-8')
+        if sys.version_info[0] != 2:
+            zero_byte = bytes(zero_byte, 'utf-8')
         notification = (zero_byte + token_length_bin + token_bin
             + payload_length_bin + payload_json)
 
