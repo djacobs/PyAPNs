@@ -27,6 +27,7 @@ from binascii import a2b_hex, b2a_hex
 from datetime import datetime
 from socket import socket, AF_INET, SOCK_STREAM
 from struct import pack, unpack
+import sys
 
 try:
     from ssl import wrap_socket
@@ -286,7 +287,10 @@ class GatewayConnection(APNsConnection):
         payload_json = payload.json()
         payload_length_bin = APNs.packed_ushort_big_endian(len(payload_json))
 
-        notification = ('\0' + token_length_bin + token_bin
+        zero_byte = '\0'
+	if sys.version_info[0] != 2:
+	    zero_byte = bytes(zero_byte, 'utf-8')
+        notification = (zero_byte + token_length_bin + token_bin
             + payload_length_bin + payload_json)
 
         return notification
