@@ -57,6 +57,13 @@ class APNs(object):
         self._gateway_connection = None
 
     @staticmethod
+    def packed_uchar(num):
+        """
+        Returns an unsigned char in packed form
+        """
+        return pack('>B', num)
+
+    @staticmethod
     def packed_ushort_big_endian(num):
         """
         Returns an unsigned short in packed big-endian (network) form
@@ -215,6 +222,44 @@ class Payload(object):
         args = ", ".join(["%s=%r" % (n, getattr(self, n)) for n in attrs])
         return "%s(%s)" % (self.__class__.__name__, args)
 
+class Frame(object):
+    """A class representing an APNs message frame for multiple sending"""
+    def __init__(self):
+        self.frame_data = bytearray()
+
+    def add_item(self, token_hex, payload, identifier, expiry, priority):
+        """Add a notification message to the frame"""
+        token_bin = a2b_hex(token_hex)
+        token_length_bin = APNs.packed_ushort_big_endian(len(token_bin))
+        token_item = '\1' + token_length_bin + token_bin
+        self.frame_data.extend(token_item)
+        
+        payload_json = payload.json()
+        payload_length_bin = APNs.packed_ushort_big_endian(len(payload_json))
+        payload_item = '\2' + payload_length_bin + payload_json
+        self.frame_data.extend(payload_item)
+
+        identifier_bin = APNs.packed_uint_big_endian(identifier)
+        identifier_length_bin = \
+                APNs.packed_ushort_big_endian(len(identifier_bin))
+        identifier_item = '\3' + identifier_length_bin + identifier_bin
+        self.frame_data.extend(identifier_item)
+
+        expiry_bin = APNs.packed_uint_big_endian(expiry)
+        expiry_length_bin = APNs.packed_ushort_big_endian(len(expiry_bin))
+        expiry_item = '\4' + expiry_length_bin + expiry_bin
+        self.frame_data.extend(expiry_item)
+
+        priority_bin = APNs.packed_uchar(priority)
+        priority_length_bin = APNs.packed_ushort_big_endian(len(priority_bin))
+        priority_item = '\5' + priority_length_bin + priority_bin
+        self.frame_data.extend(priority_item)
+    
+    def get_frame(self):
+        """Get the frame buffer"""
+        return str('\2' + APNs.packed_uint_big_endian(len(self.frame_data)) +
+                self.frame_data)
+
 
 class FeedbackConnection(APNsConnection):
     """
@@ -301,4 +346,7 @@ class GatewayConnection(APNsConnection):
 
     def send_notification(self, token_hex, payload):
         self.write(self._get_notification(token_hex, payload))
+
+    def send_notification_multiple(self, frame):
+        self.write(frame.get_frame())
 
