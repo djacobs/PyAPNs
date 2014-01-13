@@ -210,7 +210,7 @@ class Payload(object):
         return d
 
     def json(self):
-        return json.dumps(self.dict(), separators=(',',':'), ensure_ascii=False).encode('utf-8')
+        return json.dumps(self.dict(), separators=(',',':'), ensure_ascii=False, sort_keys=True).encode('utf-8')
 
     def _check_size(self):
         payload_length = len(self.json())
@@ -231,33 +231,33 @@ class Frame(object):
         """Add a notification message to the frame"""
         token_bin = a2b_hex(token_hex)
         token_length_bin = APNs.packed_ushort_big_endian(len(token_bin))
-        token_item = '\1' + token_length_bin + token_bin
+        token_item = bytes('\1', 'utf-8') + token_length_bin + token_bin
         self.frame_data.extend(token_item)
         
         payload_json = payload.json()
         payload_length_bin = APNs.packed_ushort_big_endian(len(payload_json))
-        payload_item = '\2' + payload_length_bin + payload_json
+        payload_item = bytes('\2', 'utf-8') + payload_length_bin + payload_json
         self.frame_data.extend(payload_item)
 
         identifier_bin = APNs.packed_uint_big_endian(identifier)
         identifier_length_bin = \
                 APNs.packed_ushort_big_endian(len(identifier_bin))
-        identifier_item = '\3' + identifier_length_bin + identifier_bin
+        identifier_item = bytes('\3', 'utf-8') + identifier_length_bin + identifier_bin
         self.frame_data.extend(identifier_item)
 
         expiry_bin = APNs.packed_uint_big_endian(expiry)
         expiry_length_bin = APNs.packed_ushort_big_endian(len(expiry_bin))
-        expiry_item = '\4' + expiry_length_bin + expiry_bin
+        expiry_item = bytes('\4', 'utf-8') + expiry_length_bin + expiry_bin
         self.frame_data.extend(expiry_item)
 
         priority_bin = APNs.packed_uchar(priority)
         priority_length_bin = APNs.packed_ushort_big_endian(len(priority_bin))
-        priority_item = '\5' + priority_length_bin + priority_bin
+        priority_item = bytes('\5', 'utf-8') + priority_length_bin + priority_bin
         self.frame_data.extend(priority_item)
     
     def get_frame(self):
         """Get the frame buffer"""
-        return str('\2' + APNs.packed_uint_big_endian(len(self.frame_data)) +
+        return (bytes('\2', 'utf-8') + APNs.packed_uint_big_endian(len(self.frame_data)) +
                 self.frame_data)
 
 
@@ -285,7 +285,7 @@ class FeedbackConnection(APNsConnection):
         A generator that yields (token_hex, fail_time) pairs retrieved from
         the APNs feedback server
         """
-        buff = ''
+        buff = bytes()
         for chunk in self._chunks():
             buff += chunk
 
@@ -304,7 +304,7 @@ class FeedbackConnection(APNsConnection):
                 if len(buff) >= bytes_to_read:
                     fail_time_unix = APNs.unpacked_uint_big_endian(buff[0:4])
                     fail_time = datetime.utcfromtimestamp(fail_time_unix)
-                    token = b2a_hex(buff[6:bytes_to_read])
+                    token = b2a_hex(buff[6:bytes_to_read]).decode()
 
                     yield (token, fail_time)
 

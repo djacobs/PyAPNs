@@ -14,20 +14,21 @@ TEST_CERTIFICATE = "certificate.pem" # replace with path to test certificate
 NUM_MOCK_TOKENS = 10
 mock_tokens = []
 for i in range(0, NUM_MOCK_TOKENS):
-    mock_tokens.append(hashlib.sha256("%.12f" % random()).hexdigest())
+    mock_tokens.append(hashlib.sha256(("%.12f" % random()).encode()).hexdigest())
 
 def mock_chunks_generator():
     BUF_SIZE = 64
     # Create fake data feed
-    data = ''
+    data = bytes()
 
     for t in mock_tokens:
         token_bin       = a2b_hex(t)
         token_length    = len(token_bin)
 
-        data += APNs.packed_uint_big_endian(int(time.time()))
-        data += APNs.packed_ushort_big_endian(token_length)
-        data += token_bin
+        time_bin = APNs.packed_uint_big_endian(int(time.time()))
+        token_length_bin = APNs.packed_ushort_big_endian(token_length)
+        
+        data += (time_bin + token_length_bin + token_bin)
 
     while data:
         yield data[0:BUF_SIZE]
@@ -88,7 +89,7 @@ class TestAPNs(unittest.TestCase):
         )
 
         self.assertEqual(len(notification), expected_length)
-        self.assertEqual(notification[0], '\0')
+        self.assertEqual(notification[0], 0)
 
     def testFeedbackServer(self):
         pem_file = TEST_CERTIFICATE
@@ -175,16 +176,16 @@ class TestAPNs(unittest.TestCase):
         token_hex = 'b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c'
         payload   = Payload(
             alert = "Hello World!",
-            sound = "default",
-            badge = 4
+            badge = 4,
+            sound = "default"
         )
         priority = 10
  
         frame = Frame()
         frame.add_item(token_hex, payload, identifier, expiry, priority)
 
-        f = '\x02\x00\x00\x00t\x01\x00 \xb5\xbb\x9d\x80\x14\xa0\xf9\xb1\xd6\x1e!\xe7\x96\xd7\x8d\xcc\xdf\x13R\xf2<\xd3(\x12\xf4\x85\x0b\x87\x8a\xe4\x94L\x02\x00<{"aps":{"sound":"default","badge":4,"alert":"Hello World!"}}\x03\x00\x04\x00\x00\x00\x01\x04\x00\x04\x00\x00\x0e\x10\x05\x00\x01\n'
-        self.assertEqual(f, frame.get_frame())
+        f = '\x02\x00\x00\x00t\x01\x00 \xb5\xbb\x9d\x80\x14\xa0\xf9\xb1\xd6\x1e!\xe7\x96\xd7\x8d\xcc\xdf\x13R\xf2<\xd3(\x12\xf4\x85\x0b\x87\x8a\xe4\x94L\x02\x00<{"aps":{"alert":"Hello World!","badge":4,"sound":"default"}}\x03\x00\x04\x00\x00\x00\x01\x04\x00\x04\x00\x00\x0e\x10\x05\x00\x01\n'
+        self.assertEqual(f, frame.get_frame().decode('latin1'))
 
     def testPayloadTooLargeError(self):
         # The maximum size of the JSON payload is MAX_PAYLOAD_LENGTH 
