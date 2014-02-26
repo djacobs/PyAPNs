@@ -13,7 +13,7 @@ Either download the source from GitHub or use easy_install:
 
 ```python
 import time
-from apns import APNs, Payload
+from apns import APNs, Frame, Payload
 
 apns = APNs(use_sandbox=True, cert_file='cert.pem', key_file='key.pem')
 
