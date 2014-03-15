@@ -28,6 +28,7 @@ from datetime import datetime
 from socket import socket, AF_INET, SOCK_STREAM
 from struct import pack, unpack
 import sys
+import select
 
 try:
     from ssl import wrap_socket
@@ -40,6 +41,16 @@ except ImportError:
     import simplejson as json
 
 MAX_PAYLOAD_LENGTH = 256
+
+class GatewayError(IOError):
+    def __init__(self, command, status, identifier):
+        self.command = command
+        self.status = status
+        self.identifier = identifier
+
+    def __repr__(self):
+        return "%s(command=%d, status=%d, identifier=%d)" % (
+            self.__class__.__name__, self.command, self.status, self.identifier)
 
 class APNs(object):
     """A class representing an Apple Push Notification service connection"""
@@ -137,10 +148,17 @@ class APNsConnection(object):
         if self._socket:
             self._socket.close()
 
-    def _connection(self):
+    def _ensure_connect(self):
         if not self._ssl:
             self._connect()
+
+    def _connection(self):
+        self._ensure_connect()
         return self._ssl
+
+    def fileno(self):
+        self._ensure_connect()
+        return self._socket.fileno()
 
     def read(self, n=None):
         return self._connection().read(n)
@@ -345,8 +363,32 @@ class GatewayConnection(APNsConnection):
         return notification
 
     def send_notification(self, token_hex, payload):
-        self.write(self._get_notification(token_hex, payload))
+        self._write(self._get_notification(token_hex, payload))
 
     def send_notification_multiple(self, frame):
-        self.write(frame.get_frame())
+        self._write(frame.get_frame())
 
+    def _write(self, data):
+        read_buf = ""
+        fileno = self.fileno()
+        rfds, wfds, efds = [fileno], [fileno], [fileno]
+        while True:
+            ready_to_read, ready_to_write, in_error = select.select(rfds, wfds, efds)
+            if in_error:
+                raise IOError("error")
+            elif ready_to_read:
+                chunk = self.read(6)
+                if not chunk:
+                    raise IOError("closed")
+                read_buf += chunk
+                if len(read_buf) >= 7:
+                    raise IOError("unknown")
+                elif len(read_buf) == 6:
+                    command, status, identifier = unpack("!BBL", data)
+                    raise GatewayError(command, status, identifier)
+                wfds = [] # writing was failed
+            elif ready_to_write:
+                sent_length = self.write(data)
+                if sent_length == len(data):
+                    return # succeeded
+                data = data[sent_length:]
