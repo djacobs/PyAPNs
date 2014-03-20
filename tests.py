@@ -184,7 +184,7 @@ class TestAPNs(unittest.TestCase):
         frame.add_item(token_hex, payload, identifier, expiry, priority)
 
         f = '\x02\x00\x00\x00t\x01\x00 \xb5\xbb\x9d\x80\x14\xa0\xf9\xb1\xd6\x1e!\xe7\x96\xd7\x8d\xcc\xdf\x13R\xf2<\xd3(\x12\xf4\x85\x0b\x87\x8a\xe4\x94L\x02\x00<{"aps":{"sound":"default","badge":4,"alert":"Hello World!"}}\x03\x00\x04\x00\x00\x00\x01\x04\x00\x04\x00\x00\x0e\x10\x05\x00\x01\n'
-        self.assertEqual(f, frame.get_frame())
+        self.assertEqual(f, str(frame))
 
     def testPayloadTooLargeError(self):
         # The maximum size of the JSON payload is MAX_PAYLOAD_LENGTH 
