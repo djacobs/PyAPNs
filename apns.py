@@ -119,10 +119,11 @@ class APNsConnection(object):
     """
     A generic connection class for communicating with the APNs
     """
-    def __init__(self, cert_file=None, key_file=None):
+    def __init__(self, cert_file=None, key_file=None, timeout=None):
         super(APNsConnection, self).__init__()
         self.cert_file = cert_file
         self.key_file = key_file
+        self.timeout = timeout
         self._socket = None
         self._ssl = None
 
