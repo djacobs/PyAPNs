@@ -27,6 +27,7 @@ from binascii import a2b_hex, b2a_hex
 from datetime import datetime
 from socket import socket, timeout, AF_INET, SOCK_STREAM
 from struct import pack, unpack
+from ssl import SSLError
 import sys
 
 try:
