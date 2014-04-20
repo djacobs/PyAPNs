@@ -30,9 +30,9 @@ from struct import pack, unpack
 import sys
 
 try:
-    from ssl import wrap_socket
+    from ssl import wrap_socket, SSLError
 except ImportError:
-    from socket import ssl as wrap_socket
+    from socket import ssl as wrap_socket, sslerror as SSLError
 
 from _ssl import SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE
 
@@ -132,7 +132,7 @@ class APNsConnection(object):
 
     def _connect(self):
         # Establish an SSL connection
-        
+
         # Fallback for socket timeout.
         for i in xrange(3):
             try:
@@ -262,7 +262,7 @@ class Frame(object):
         token_item = '\1' + token_length_bin + token_bin
         self.frame_data.extend(token_item)
         item_len += len(token_item)
-        
+
         payload_json = payload.json()
         payload_length_bin = APNs.packed_ushort_big_endian(len(payload_json))
         payload_item = '\2' + payload_length_bin + payload_json
@@ -287,7 +287,7 @@ class Frame(object):
         priority_item = '\5' + priority_length_bin + priority_bin
         self.frame_data.extend(priority_item)
         item_len += len(priority_item)
-        
+
         self.frame_data[-item_len-4:-item_len] = APNs.packed_uint_big_endian(item_len)
 
     def __str__(self):
