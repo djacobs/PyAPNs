@@ -52,7 +52,7 @@ payload = Payload(alert="Hello World!", custom={'sekrit_number':123})
 
 ## Travis Build Status
 
-[![Build Status](https://secure.travis-ci.org/simonwhitaker/PyAPNs.png?branch=master)](http://travis-ci.org/simonwhitaker/PyAPNs)
+[![Build Status](https://secure.travis-ci.org/djacobs/PyAPNs.png?branch=master)](http://travis-ci.org/djacobs/PyAPNs)
 
 ## Further Info
 
