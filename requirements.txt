@@ -1,1 +1,0 @@
-simplejson==2.6.1 # Not required on Python 2.6+
