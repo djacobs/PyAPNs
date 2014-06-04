@@ -64,7 +64,7 @@ apns_enhanced.gateway_server.send_notification(token_hex, payload, identifier=id
 ```
 
 Callback when error-response occur, with parameter {'status': 8, 'identifier': 1}.
-[Status code refernce](https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/CommunicatingWIthAPS.html#//apple_ref/doc/uid/TP40008194-CH101-SW4)
+[Status code reference](https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/CommunicatingWIthAPS.html#//apple_ref/doc/uid/TP40008194-CH101-SW4)
 ```python
 def response_listener(error_response):
     _logger.debug("client get error-response: " + str(error_response))
