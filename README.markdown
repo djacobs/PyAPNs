@@ -105,6 +105,13 @@ Solution:
 * A sent notification buffer used for re-sending notification that were sent after failed notification, or arbitrary connection close by apns.
 * Reference to [non-blocking apns pull request by minorblend](https://github.com/djacobs/PyAPNs/pull/25), [enhanced message by hagino3000](https://github.com/voyagegroup/apns-proxy-server/blob/065775f87dbf25f6b06f24edc73dc5de4481ad36/apns_proxy_server/worker.py#l164-209)
 
+Result:
+
+* Send notification at throughput of 1000/secs
+* In worse case of when 1st notification sent failed, error-response respond after 1 secs and 999 notification sent are discarded by APNS at the mean time, all discarded 999 notifications will be resent without loosing any of them. With the same logic, if notification resent failed, it will resent rest of resent notification after the failed one.
+
+[Test Script](https://gist.github.com/jimhorng/594401f68ce48282ced5)
+
 ## Travis Build Status
 
 [![Build Status](https://secure.travis-ci.org/djacobs/PyAPNs.png?branch=master)](http://travis-ci.org/djacobs/PyAPNs)
