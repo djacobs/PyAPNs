@@ -125,6 +125,11 @@ class TestAPNs(unittest.TestCase):
         self.assertEqual(d['loc-args'], ['king','kong'])
         self.assertEqual(d['launch-image'], 'wobble')
 
+        pa = PayloadAlert(loc_key='wibble')
+        d = pa.dict()
+        self.assertTrue('body' not in d)
+        self.assertEqual(d['loc-key'], 'wibble')
+
     def testPayload(self):
         # Payload with just alert
         p = Payload(alert=PayloadAlert('foo'))

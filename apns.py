@@ -175,7 +175,7 @@ class APNsConnection(object):
 
 
 class PayloadAlert(object):
-    def __init__(self, body, action_loc_key=None, loc_key=None,
+    def __init__(self, body=None, action_loc_key=None, loc_key=None,
                  loc_args=None, launch_image=None):
         super(PayloadAlert, self).__init__()
         self.body = body
@@ -185,7 +185,9 @@ class PayloadAlert(object):
         self.launch_image = launch_image
 
     def dict(self):
-        d = { 'body': self.body }
+        d = {}
+        if self.body:
+            d['body'] = self.body
         if self.action_loc_key:
             d['action-loc-key'] = self.action_loc_key
         if self.loc_key:
