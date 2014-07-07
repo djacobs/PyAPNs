@@ -527,6 +527,7 @@ class GatewayConnection(APNsConnection):
     
     def _read_error_response(self):
         while not self._close_read_thread:
+            time.sleep(0.1) #avoid crazy loop if something bad happened. e.g. using invalid certificate
             while not self.connection_alive:
                 time.sleep(0.1)
             
