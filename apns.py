@@ -334,7 +334,7 @@ class Payload(object):
             raise PayloadTooLargeError(payload_length)
 
     def __repr__(self):
-        attrs = ("alert", "badge", "sound", "custom")
+        attrs = ("alert", "badge", "sound", "category", "custom")
         args = ", ".join(["%s=%r" % (n, getattr(self, n)) for n in attrs])
         return "%s(%s)" % (self.__class__.__name__, args)
 
