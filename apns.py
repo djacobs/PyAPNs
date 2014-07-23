@@ -263,7 +263,8 @@ class APNsConnection(object):
             
             if len(wlist) > 0:
                 length = self._connection().sendall(string)
-                _logger.debug("sent length: %d" % length) #DEBUG
+                if length == 0:
+                    _logger.debug("sent length: %d" % length) #DEBUG
             else:
                 _logger.warning("write socket descriptor is not ready after " + str(WAIT_WRITE_TIMEOUT_SECS))
             
@@ -509,15 +510,18 @@ class GatewayConnection(APNsConnection):
         """
         in enhanced mode, send_notification may return error response from APNs if any
         """
+        
+        RETRY = 3
+        
         if self.enhanced:
-            self._make_sure_read_error_worker_alive()
 #             self._wait_resending(30)
             message = self._get_enhanced_notification(token_hex, payload,
                                                            identifier, expiry)
             
-            for i in xrange(3):
+            for i in xrange(RETRY):
                 try:
                     with self._send_lock:
+                        self._make_sure_read_error_worker_alive()
                         self.write(message)
                         self._sent_notifications.append(dict({'id': identifier, 'message': message}))
                     break
@@ -525,7 +529,7 @@ class GatewayConnection(APNsConnection):
                     delay = 10 + (i * 2)
                     _logger.exception("sending notification with id:" + str(identifier) + 
                                  " to APNS failed: " + str(type(e)) + ": " + str(e) + 
-                                 " will retry in " + str(delay) + " secs")
+                                 " in " + str(i+1) + "th attempt, will wait " + str(delay) + " secs for next action")
                     time.sleep(delay) # wait potential error-response to be read
             
             self._last_activity_time = time.time()
@@ -560,7 +564,16 @@ class GatewayConnection(APNsConnection):
     
     def _read_error_response(self):
         TIMEOUT_WAIT_READ_READY = 10
-        while not self._close_read_thread and not self._is_idle_timeout():
+        while True:
+            if self._close_read_thread:
+                _logger.debug("received close thread signal")
+                break
+            
+            if self._is_idle_timeout():
+                idled_time = (time.time() - self._last_activity_time)
+                _logger.debug("connection idle after %d secs" % idled_time)
+                break
+            
             if not self.connection_alive:
                 continue
             
@@ -587,11 +600,12 @@ class GatewayConnection(APNsConnection):
                             
             except socket_error as e: # APNS close connection arbitrarily
                 _logger.exception("exception occur when reading APNS error-response: " + str(type(e)) + ": " + str(e)) #DEBUG
-#                 self._disconnect()
+                self._disconnect()
                 continue
                         
             time.sleep(0.1) #avoid crazy loop if something bad happened. e.g. using invalid certificate
         
+        self._disconnect()
         _logger.debug("read e-r thread close") #DEBUG
     
     def _is_idle_timeout(self):
@@ -613,8 +627,8 @@ class GatewayConnection(APNsConnection):
             try:
                 self.write(sent_notification['message'])
             except socket_error as e:
-                _logger.debug("resending notification with id:" + str(sent_notification['id']) + " failed: " + str(type(e)) + ": " + str(e)) #DEBUG
-                return
+                _logger.exception("resending notification with id:" + str(sent_notification['id']) + " failed: " + str(type(e)) + ": " + str(e)) #DEBUG
+                break
             time.sleep(DELAY_RESEND_SECS) #DEBUG
         self._is_resending = False
         self._last_activity_time = time.time()
