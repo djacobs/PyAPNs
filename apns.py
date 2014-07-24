@@ -83,8 +83,11 @@ ERROR_RESPONSE_FORMAT = (
 
 TOKEN_LENGTH = 32
 ERROR_RESPONSE_LENGTH = 6
-DELAY_RESEND_SECS = 0.0
+DELAY_RESEND_SEC = 0.0
 SENT_BUFFER_QTY = 3000
+WAIT_WRITE_TIMEOUT_SEC = 10
+WAIT_READ_TIMEOUT_SEC = 10
+WRITE_RETRY = 3
 
 ER_STATUS = 'status'
 ER_IDENTIFER = 'identifier'
@@ -252,16 +255,15 @@ class APNsConnection(object):
         return self._connection().read(n)
 
     def write(self, string):
-        WAIT_WRITE_TIMEOUT_SECS=10
         if self.enhanced: # nonblocking socket
-            _, wlist, _ = select.select([], [self._connection()], [], WAIT_WRITE_TIMEOUT_SECS)
+            _, wlist, _ = select.select([], [self._connection()], [], WAIT_WRITE_TIMEOUT_SEC)
             
             if len(wlist) > 0:
                 length = self._connection().sendall(string)
                 if length == 0:
                     _logger.debug("sent length: %d" % length) #DEBUG
             else:
-                _logger.warning("write socket descriptor is not ready after " + str(WAIT_WRITE_TIMEOUT_SECS))
+                _logger.warning("write socket descriptor is not ready after " + str(WAIT_WRITE_TIMEOUT_SEC))
             
         else: # blocking socket
             return self._connection().write(string)
@@ -506,14 +508,11 @@ class GatewayConnection(APNsConnection):
         """
         in enhanced mode, send_notification may return error response from APNs if any
         """
-        
-        RETRY = 3
-        
         if self.enhanced:
             message = self._get_enhanced_notification(token_hex, payload,
                                                            identifier, expiry)
             
-            for i in xrange(RETRY):
+            for i in xrange(WRITE_RETRY):
                 try:
                     with self._send_lock:
                         self._make_sure_error_response_handler_worker_alive()
@@ -566,7 +565,6 @@ class GatewayConnection(APNsConnection):
             self._close_signal = True
         
         def run(self):
-            TIMEOUT_WAIT_READ_READY = 10
             while True:
                 if self._close_signal:
                     _logger.debug("received close thread signal")
@@ -581,7 +579,7 @@ class GatewayConnection(APNsConnection):
                     continue
                 
                 try:
-                    rlist, _, _ = select.select([self._connection._connection()], [], [], TIMEOUT_WAIT_READ_READY)
+                    rlist, _, _ = select.select([self._connection._connection()], [], [], WAIT_READ_TIMEOUT_SEC)
                     
                     if len(rlist) > 0: # there's some data from APNs
                         with self._connection._send_lock:
@@ -626,7 +624,7 @@ class GatewayConnection(APNsConnection):
                 except socket_error as e:
                     _logger.exception("resending notification with id:" + str(sent_notification['id']) + " failed: " + str(type(e)) + ": " + str(e)) #DEBUG
                     break
-                time.sleep(DELAY_RESEND_SECS) #DEBUG
+                time.sleep(DELAY_RESEND_SEC) #DEBUG
             self._connection._last_activity_time = time.time()
 
 class Util(object):
