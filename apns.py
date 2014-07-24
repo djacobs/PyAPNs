@@ -248,11 +248,6 @@ class APNsConnection(object):
             self._connect()
         return self._ssl
 
-    def _reconnect(self):
-        _logger.info("rebuilding connection to APNS")
-        self._disconnect()
-        self._connect()
-
     def read(self, n=None):
         return self._connection().read(n)
 
