@@ -189,7 +189,7 @@ class APNsConnection(object):
 
     def _connect(self):
         # Establish an SSL connection
-        _logger.debug("establishing ssl connection...")
+        _logger.debug("%s APNS connection establishing..." % self.__class__.__name__)
 
         # Fallback for socket timeout.
         for i in xrange(3):
@@ -232,7 +232,7 @@ class APNsConnection(object):
                         sys.exc_clear()
                     else:
                        raise
-        _logger.debug("established ssl connection...")
+        _logger.debug("%s APNS connection established" % self.__class__.__name__)
 
     def _disconnect(self):
         if self.connection_alive:
@@ -241,7 +241,7 @@ class APNsConnection(object):
             if self._ssl:
                 self._ssl.close()
             self.connection_alive = False
-            _logger.info("close APNS connection")
+            _logger.info(" %s APNS connection closed" % self.__class__.__name__)
 
     def _connection(self):
         if not self._ssl or not self.connection_alive:
