@@ -343,6 +343,9 @@ class Frame(object):
     def __init__(self):
         self.frame_data = bytearray()
 
+    def get_frame(self):
+        return self.frame_data
+
     def add_item(self, token_hex, payload, identifier, expiry, priority):
         """Add a notification message to the frame"""
         item_len = 0
