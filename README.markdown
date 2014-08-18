@@ -120,6 +120,12 @@ Result:
 
 [iOS Reference Library: Local and Push Notification Programming Guide][a1]
 
+## License
+
+PyAPNs is distributed under the terms of the MIT license.
+
+See [LICENSE](LICENSE) file for the complete license details.
+
 ## Credits
 
 Written and maintained by Simon Whitaker at [Goo Software Ltd][goo].
