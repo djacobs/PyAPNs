@@ -29,11 +29,19 @@ expiry = time.time()+3600
 priority = 10
 frame.add_item('b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b87', payload, identifier, expiry, priority)
 apns.gateway_server.send_notification_multiple(frame)
+```
 
-# Get feedback messages
-for (token_hex, fail_time) in apns.feedback_server.items():
+Apple recommends to query the feedback service daily to get the list of device tokens. You need to create a new connection to APNS to see all the tokens that have failed since you only receive that information upon connection. Remember, once you have viewed the list of tokens, Apple will clear the list from their servers. Use the timestamp to verify that the device tokens haven’t been reregistered since the feedback entry was generated. For each device that has not been reregistered, stop sending notifications. By using this information to stop sending push notifications that will fail to be delivered, you reduce unnecessary message overhead and improve overall system performance.
+
+```
+#New APNS connection
+feedback_connection = APNS(use_sandbox=True, cert_file='cert.pem', key_file='key.pem')
+
+# Get feedback messages.
+for (token_hex, fail_time) in feedback_connection.feedback_server.items():
     # do stuff with token_hex and fail_time
 ```
+
 
 For more complicated alerts including custom buttons etc, use the PayloadAlert 
 class. Example:
