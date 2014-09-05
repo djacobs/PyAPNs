@@ -48,7 +48,7 @@ except ImportError:
 
 _logger = logging.getLogger(__name__)
 
-MAX_PAYLOAD_LENGTH = 256
+MAX_PAYLOAD_LENGTH = 2048
 
 NOTIFICATION_COMMAND = 0
 ENHANCED_NOTIFICATION_COMMAND = 1
