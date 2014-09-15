@@ -25,8 +25,17 @@
 
 from binascii import a2b_hex, b2a_hex
 from datetime import datetime
-from socket import socket, timeout, AF_INET, SOCK_STREAM
+from socket import socket, timeout
 from socket import error as socket_error
+from socket import AF_INET, SOCK_STREAM, SOL_SOCKET, IPPROTO_TCP, SO_KEEPALIVE
+
+import os
+
+if os.uname()[0] == u'Darwin':
+    pass
+else:
+    from socket import TCP_KEEPIDLE, TCP_KEEPINTVL, TCP_KEEPCNT
+
 from struct import pack, unpack
 import sys
 import ssl
@@ -139,7 +148,7 @@ class APNs(object):
         Returns an unsigned int from a packed big-endian (network) byte array
         """
         return unpack('>I', bytes)[0]
-    
+
     @staticmethod
     def unpacked_char_big_endian(bytes):
         """
@@ -194,7 +203,20 @@ class APNsConnection(object):
             try:
                 self._socket = socket(AF_INET, SOCK_STREAM)
                 self._socket.settimeout(self.timeout)
+
+                # 'keep alive' for OS X
+                if os.uname()[0] == u'Darwin':
+                    TCP_KEEPALIVE = 0x10
+                    self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                    self._socket.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, 3)
+                else: # and others
+                    self._socket.setsockopt(SOL_SOCKET, SO_KEEPALIVE, 1)
+                    self._socket.setsockopt(IPPROTO_TCP, TCP_KEEPIDLE, 1)
+                    self._socket.setsockopt(IPPROTO_TCP, TCP_KEEPINTVL, 3)
+                    self._socket.setsockopt(IPPROTO_TCP, TCP_KEEPCNT, 5)
+
                 self._socket.connect((self.server, self.port))
+
                 break
             except timeout:
                 pass
@@ -491,7 +513,7 @@ class GatewayConnection(APNsConnection):
          notification = pack(fmt, ENHANCED_NOTIFICATION_COMMAND, identifier, expiry,
                              TOKEN_LENGTH, token, len(payload), payload)
          return notification
-         
+
     def send_notification(self, token_hex, payload, identifier=0, expiry=0):
         """
         in enhanced mode, send_notification may return error response from APNs if any
@@ -506,7 +528,7 @@ class GatewayConnection(APNsConnection):
                     self.write(message)
                 except socket_error as e:
                     _logger.info("sending notification with id:" + str(identifier) + " to APNS failed: " + str(type(e)) + ": " + str(e))
-        
+
         else:
             self.write(self._get_notification(token_hex, payload))
 
@@ -524,21 +546,21 @@ class GatewayConnection(APNsConnection):
 
     def send_notification_multiple(self, frame):
         return self.write(frame.get_frame())
-    
+
     def register_response_listener(self, response_listener):
         self._response_listener = response_listener
-    
+
     def close_read_thread(self):
         self._close_read_thread = True
-    
+
     def _read_error_response(self):
         while not self._close_read_thread:
             time.sleep(0.1) #avoid crazy loop if something bad happened. e.g. using invalid certificate
             while not self.connection_alive:
                 time.sleep(0.1)
-            
+
             rlist, _, _ = select.select([self._connection()], [], [], 1)
-            
+
             if len(rlist) > 0: # there's error response from APNs
                 try:
                     buff = self.read(ERROR_RESPONSE_LENGTH)
@@ -562,13 +584,13 @@ class GatewayConnection(APNsConnection):
                         with self._send_lock:
                             self._reconnect()
                             self._resend_notifications_by_id(identifier)
-    
+
     def _resend_notifications_by_id(self, failed_identifier):
         fail_idx = Util.getListIndexFromID(self._sent_notifications, failed_identifier)
         #pop-out success notifications till failed one
         self._resend_notification_by_range(fail_idx+1, len(self._sent_notifications))
         return
-    
+
     def _resend_notification_by_range(self, start_idx, end_idx):
         self._sent_notifications = collections.deque(itertools.islice(self._sent_notifications, start_idx, end_idx))
         self._last_resent_qty = len(self._sent_notifications)
@@ -586,7 +608,7 @@ class GatewayConnection(APNsConnection):
 class Util(object):
     @classmethod
     def getListIndexFromID(this_class, the_list, identifier):
-        return next(index for (index, d) in enumerate(the_list) 
+        return next(index for (index, d) in enumerate(the_list)
                         if d['id'] == identifier)
     @classmethod
     def convert_error_response_to_dict(this_class, error_response_tuple):
