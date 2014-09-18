@@ -213,7 +213,6 @@ class APNsConnection(object):
             while True:
                 try:
                     self._ssl.do_handshake()
-                    self.connection_alive = True
                     break
                 except ssl.SSLError, err:
                     if ssl.SSL_ERROR_WANT_READ == err.args[0]:
@@ -235,6 +234,8 @@ class APNsConnection(object):
                         sys.exc_clear()
                     else:
                        raise
+        
+        self.connection_alive = True
         _logger.debug("%s APNS connection established" % self.__class__.__name__)
 
     def _disconnect(self):
