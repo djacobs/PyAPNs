@@ -458,6 +458,7 @@ class GatewayConnection(APNsConnection):
             self._send_lock = threading.RLock()
             self._close_read_thread = False
             self._read_error_response_worker = threading.Thread(target=self._read_error_response)
+            self._read_error_response_worker.daemon = True
             self._read_error_response_worker.start()
             self._is_resending = False
             self._last_resent_qty = 10
