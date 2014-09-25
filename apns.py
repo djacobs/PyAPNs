@@ -342,6 +342,7 @@ class Frame(object):
     """A class representing an APNs message frame for multiple sending"""
     def __init__(self):
         self.frame_data = bytearray()
+        self.notification_data = list()
 
     def get_frame(self):
         return self.frame_data
@@ -383,6 +384,12 @@ class Frame(object):
         item_len += len(priority_item)
 
         self.frame_data[-item_len-4:-item_len] = APNs.packed_uint_big_endian(item_len)
+
+        self.notification_data.append({'token':token_hex, 'payload':payload, 'identifier':identifier, 'expiry':expiry, "priority":priority})
+
+    def get_notifications(self, gateway_connection):
+        notifications = list({'id': x['identifier'], 'message':gateway_connection._get_enhanced_notification(x['token'], x['payload'],x['identifier'], x['expiry'])} for x in self.notification_data)
+        return notifications
 
     def __str__(self):
         """Get the frame buffer"""
@@ -523,6 +530,7 @@ class GatewayConnection(APNsConnection):
             elapsed += interval
 
     def send_notification_multiple(self, frame):
+        self._sent_notifications += frame.get_notifications(self)
         return self.write(frame.get_frame())
     
     def register_response_listener(self, response_listener):
