@@ -111,7 +111,8 @@ Result:
 * Send notification at throughput of 1000/secs
 * In worse case of when 1st notification sent failed, error-response respond after 1 secs and 999 notification sent are discarded by APNS at the mean time, all discarded 999 notifications will be resent without loosing any of them. With the same logic, if notification resent failed, it will resent rest of resent notification after the failed one.
 
-[Test Script](https://gist.github.com/jimhorng/594401f68ce48282ced5)
+## Test ##
+* [Test Script](https://gist.github.com/jimhorng/594401f68ce48282ced5)
 
 ## Travis Build Status
 
