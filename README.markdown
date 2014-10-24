@@ -80,9 +80,10 @@ def response_listener(error_response):
 apns_enhanced.gateway_server.register_response_listener(response_listener)
 ```
 
-Manually close thread of reading error-response if you want discard future error-responses.
+Error response worker will be auto-close after 30 secs idle of connection operations.
+If you want disable APNS connection and error-responses handlder immediately, force_close it.
 ```python
-apns_enhanced.gateway_server.close_read_thread()
+apns_enhanced.gateway_server.force_close()
 ```
 
 Extra log messages when error-response occur, auto-resent afterwards.
@@ -118,7 +119,8 @@ Result:
 * Send notification at throughput of 1000/secs
 * In worse case of when 1st notification sent failed, error-response respond after 1 secs and 999 notification sent are discarded by APNS at the mean time, all discarded 999 notifications will be resent without loosing any of them. With the same logic, if notification resent failed, it will resent rest of resent notification after the failed one.
 
-[Test Script](https://gist.github.com/jimhorng/594401f68ce48282ced5)
+## Test ##
+* [Test Script](https://gist.github.com/jimhorng/594401f68ce48282ced5)
 
 ## Travis Build Status
 
