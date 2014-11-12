@@ -468,7 +468,6 @@ class GatewayConnection(APNsConnection):
             self._response_listener = None
             
             self._sent_notifications = collections.deque(maxlen=SENT_BUFFER_QTY)
-            self._last_resent_qty = 10
 
     def _init_error_response_handler_worker(self):
         self._send_lock = threading.RLock()
@@ -616,8 +615,7 @@ class GatewayConnection(APNsConnection):
     
         def _resend_notification_by_range(self, start_idx, end_idx):
             self._connection._sent_notifications = collections.deque(itertools.islice(self._connection._sent_notifications, start_idx, end_idx))
-            self._last_resent_qty = len(self._connection._sent_notifications)
-            _logger.info("resending " + str(self._connection._last_resent_qty) + " notifications to APNS") #DEBUG
+            _logger.info("resending %s notifications to APNS" % len(self._connection._sent_notifications)) #DEBUG
             for sent_notification in self._connection._sent_notifications:
                 _logger.debug("resending notification with id:" + str(sent_notification['id']) + " to APNS") #DEBUG
                 try:
