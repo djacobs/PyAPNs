@@ -47,6 +47,7 @@ try:
 except ImportError:
     import simplejson as json
 
+#default logger - overridden in constructor if one is provided
 _logger = logging.getLogger(__name__)
 
 MAX_PAYLOAD_LENGTH = 2048
@@ -95,7 +96,7 @@ ER_IDENTIFER = 'identifier'
 class APNs(object):
     """A class representing an Apple Push Notification service connection"""
 
-    def __init__(self, use_sandbox=False, cert_file=None, key_file=None, enhanced=False):
+    def __init__(self, use_sandbox=False, cert_file=None, key_file=None, enhanced=False, logger=None):
         """
         Set use_sandbox to True to use the sandbox (test) APNs servers.
         Default is False.
@@ -107,6 +108,8 @@ class APNs(object):
         self._feedback_connection = None
         self._gateway_connection = None
         self.enhanced = enhanced
+        if logger:
+            self._logger = logger
 
     @staticmethod
     def packed_uchar(num):
