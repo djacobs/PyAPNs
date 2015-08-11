@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
+import json
 from apns import *
 from binascii import a2b_hex
 from random import random
@@ -14,12 +15,14 @@ TEST_CERTIFICATE = "certificate.pem" # replace with path to test certificate
 NUM_MOCK_TOKENS = 10
 mock_tokens = []
 for i in range(0, NUM_MOCK_TOKENS):
-    mock_tokens.append(hashlib.sha256("%.12f" % random()).hexdigest())
+    mock_tokens.append(hashlib.sha256(
+        ("%.12f" % random()).encode("utf-8")
+    ).hexdigest().encode("utf-8"))
 
 def mock_chunks_generator():
     BUF_SIZE = 64
     # Create fake data feed
-    data = ''
+    data = b''
 
     for t in mock_tokens:
         token_bin       = a2b_hex(t)
@@ -88,7 +91,7 @@ class TestAPNs(unittest.TestCase):
         )
 
         self.assertEqual(len(notification), expected_length)
-        self.assertEqual(notification[0], '\0')
+        self.assertEqual(notification[0:1], b'\0')
 
     def testFeedbackServer(self):
         pem_file = TEST_CERTIFICATE
@@ -187,9 +190,16 @@ class TestAPNs(unittest.TestCase):
  
         frame = Frame()
         frame.add_item(token_hex, payload, identifier, expiry, priority)
+        
+        frame_data = bytes(frame.frame_data)
+        f = b'\x02\x00\x00\x00t\x01\x00 \xb5\xbb\x9d\x80\x14\xa0\xf9\xb1\xd6\x1e!\xe7\x96\xd7\x8d\xcc\xdf\x13R\xf2<\xd3(\x12\xf4\x85\x0b\x87\x8a\xe4\x94L\x02\x00<{"aps":{"sound":"default","badge":4,"alert":"Hello World!"}}\x03\x00\x04\x00\x00\x00\x01\x04\x00\x04\x00\x00\x0e\x10\x05\x00\x01\n'
 
-        f = '\x02\x00\x00\x00t\x01\x00 \xb5\xbb\x9d\x80\x14\xa0\xf9\xb1\xd6\x1e!\xe7\x96\xd7\x8d\xcc\xdf\x13R\xf2<\xd3(\x12\xf4\x85\x0b\x87\x8a\xe4\x94L\x02\x00<{"aps":{"sound":"default","badge":4,"alert":"Hello World!"}}\x03\x00\x04\x00\x00\x00\x01\x04\x00\x04\x00\x00\x0e\x10\x05\x00\x01\n'
-        self.assertEqual(f, str(frame))
+        self.assertEqual(f[0:43], frame_data[0:43])
+        self.assertEqual(
+            json.loads(f[43:103].decode("utf-8")),
+            json.loads(frame_data[43:103].decode("utf-8"))
+        )
+        self.assertEqual(f[103:], frame_data[103:])
 
     def testPayloadTooLargeError(self):
         # The maximum size of the JSON payload is MAX_PAYLOAD_LENGTH 
