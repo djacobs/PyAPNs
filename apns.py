@@ -28,6 +28,7 @@ from datetime import datetime
 from socket import socket, timeout, AF_INET, SOCK_STREAM
 from socket import error as socket_error
 from struct import pack, unpack
+import random
 import sys
 import ssl
 import select
@@ -517,14 +518,18 @@ class GatewayConnection(APNsConnection):
                             TOKEN_LENGTH, token, len(payload), payload)
         return notification
          
-    def send_notification(self, token_hex, payload, identifier=0, expiry=0):
+    def send_notification(self, token_hex, payload, identifier=None, expiry=0):
         """
         in enhanced mode, send_notification may return error response from APNs if any
         """
         if self.enhanced:
             self._last_activity_time = time.time()
+            if identifier is None:
+                identifier = random.getrandbits(32)
+                _logger.warning("identifier should be specified under enchance mode"
+                                ", automatically set to {}".format(identifier))
             message = self._get_enhanced_notification(token_hex, payload,
-                                                           identifier, expiry)
+                                                      identifier, expiry)
             
             for i in xrange(WRITE_RETRY):
                 try:
