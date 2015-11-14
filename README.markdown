@@ -63,7 +63,7 @@ payload = Payload(alert="Hello World!", custom={'sekrit_number':123})
 apns_enhanced = APNs(use_sandbox=True, cert_file='apns.pem', enhanced=True)
 ```
 
-Send a notification. note that `identifer` is the information to indicate which message has error in error-response payload.
+Send a notification. note that `identifer` is the information to indicate which message has error in error-response payload, it should be **UNIQUE** since PyAPNs will also use it to determine the range of messages to be re-sent.
 ```python
 token_hex = 'b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b87'
 payload = Payload(alert="Hello World!", sound="default", badge=1)
@@ -71,7 +71,7 @@ identifier = random.getrandbits(32)
 apns_enhanced.gateway_server.send_notification(token_hex, payload, identifier=identifier)
 ```
 
-Callback when error-response occur, with parameter {'status': 8, 'identifier': 1}.
+Callback when error-response occur, with parameter `{'status': <status code from APNS>, 'identifier': <the identifier specified>}`
 [Status code reference](https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/CommunicatingWIthAPS.html#//apple_ref/doc/uid/TP40008194-CH101-SW4)
 ```python
 def response_listener(error_response):
