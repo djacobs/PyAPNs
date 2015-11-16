@@ -6,6 +6,7 @@ from random import random
 
 import hashlib
 import os
+import six
 import time
 import unittest
 
@@ -14,12 +15,12 @@ TEST_CERTIFICATE = "certificate.pem" # replace with path to test certificate
 NUM_MOCK_TOKENS = 10
 mock_tokens = []
 for i in range(0, NUM_MOCK_TOKENS):
-    mock_tokens.append(hashlib.sha256("%.12f" % random()).hexdigest())
+    mock_tokens.append(six.b(hashlib.sha256(six.b("%.12f" % random())).hexdigest()))
 
 def mock_chunks_generator():
     BUF_SIZE = 64
     # Create fake data feed
-    data = ''
+    data = six.binary_type()
 
     for t in mock_tokens:
         token_bin       = a2b_hex(t)
@@ -88,7 +89,7 @@ class TestAPNs(unittest.TestCase):
         )
 
         self.assertEqual(len(notification), expected_length)
-        self.assertEqual(notification[0], '\0')
+        self.assertEqual(notification[0], six.b('\0')[0])
 
     def testFeedbackServer(self):
         pem_file = TEST_CERTIFICATE
@@ -184,15 +185,15 @@ class TestAPNs(unittest.TestCase):
             badge = 4
         )
         priority = 10
- 
+
         frame = Frame()
         frame.add_item(token_hex, payload, identifier, expiry, priority)
 
-        f = '\x02\x00\x00\x00t\x01\x00 \xb5\xbb\x9d\x80\x14\xa0\xf9\xb1\xd6\x1e!\xe7\x96\xd7\x8d\xcc\xdf\x13R\xf2<\xd3(\x12\xf4\x85\x0b\x87\x8a\xe4\x94L\x02\x00<{"aps":{"sound":"default","badge":4,"alert":"Hello World!"}}\x03\x00\x04\x00\x00\x00\x01\x04\x00\x04\x00\x00\x0e\x10\x05\x00\x01\n'
-        self.assertEqual(f, str(frame))
+        f = six.b('\x02\x00\x00\x00t\x01\x00 \xb5\xbb\x9d\x80\x14\xa0\xf9\xb1\xd6\x1e!\xe7\x96\xd7\x8d\xcc\xdf\x13R\xf2<\xd3(\x12\xf4\x85\x0b\x87\x8a\xe4\x94L\x02\x00<{"aps":{"sound":"default","badge":4,"alert":"Hello World!"}}\x03\x00\x04\x00\x00\x00\x01\x04\x00\x04\x00\x00\x0e\x10\x05\x00\x01\n')
+        self.assertEqual(f, frame.data())
 
     def testPayloadTooLargeError(self):
-        # The maximum size of the JSON payload is MAX_PAYLOAD_LENGTH 
+        # The maximum size of the JSON payload is MAX_PAYLOAD_LENGTH
         # bytes. First determine how many bytes this allows us in the
         # raw payload (i.e. before JSON serialisation)
         json_overhead_bytes = len(Payload('.').json()) - 1
@@ -200,7 +201,7 @@ class TestAPNs(unittest.TestCase):
 
         # Test ascii characters payload
         Payload('.' * max_raw_payload_bytes)
-        self.assertRaises(PayloadTooLargeError, Payload, 
+        self.assertRaises(PayloadTooLargeError, Payload,
             '.' * (max_raw_payload_bytes + 1))
 
         # Test unicode 2-byte characters payload
