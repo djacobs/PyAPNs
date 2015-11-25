@@ -480,7 +480,7 @@ class GatewayConnection(APNsConnection):
             self._error_response_handler_worker = None
             self._response_listener = None
             
-            self._sent_notifications = collections.deque(maxlen=SENT_BUFFER_QTY)
+        self._sent_notifications = collections.deque(maxlen=SENT_BUFFER_QTY)
 
     def _init_error_response_handler_worker(self):
         self._send_lock = threading.RLock()
