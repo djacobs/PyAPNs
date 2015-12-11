@@ -35,7 +35,7 @@ Apple recommends to query the feedback service daily to get the list of device t
 
 ```
 #New APNS connection
-feedback_connection = APNS(use_sandbox=True, cert_file='cert.pem', key_file='key.pem')
+feedback_connection = APNs(use_sandbox=True, cert_file='cert.pem', key_file='key.pem')
 
 # Get feedback messages.
 for (token_hex, fail_time) in feedback_connection.feedback_server.items():
