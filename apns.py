@@ -334,7 +334,8 @@ class Payload(object):
         if self.content_available:
             d.update({'content-available': 1})
 
-        d = { 'aps': d }
+        if d:
+            d = {'aps': d}
         d.update(self.custom)
         return d
 
