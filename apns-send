@@ -10,6 +10,10 @@ parser.add_option("-c", "--certificate-file",
                   dest="certificate_file",
                   help="Path to .pem certificate file")
 
+parser.add_option("-k", "--key-file",
+                  dest="key_file",
+                  help="Path to .pem key file")
+
 parser.add_option("-p", "--push-token",
                   dest="push_token",
                   help="Push token")
@@ -17,6 +21,10 @@ parser.add_option("-p", "--push-token",
 parser.add_option("-m", "--message",
                   dest="message",
                   help="Message")
+
+parser.add_option("-s", "--sandbox",
+                  action="store_true", dest="sandbox", default=False,
+                  help="Use apple sandbox (dev push certificates)")
 
 options, args = parser.parse_args()
 
@@ -29,7 +37,7 @@ if options.push_token is None:
 if options.message is None:
     parser.error('Must provide --message')
 
-apns = APNs(cert_file=options.certificate_file)
+apns = APNs(use_sandbox=options.sandbox, cert_file=options.certificate_file, key_file=options.key_file)
 
 # Send a notification
 payload = Payload(alert=options.message, sound="default", badge=1)
