@@ -81,7 +81,7 @@ apns_enhanced.gateway_server.register_response_listener(response_listener)
 ```
 
 Error response worker will be auto-close after 30 secs idle of connection operations.
-If you want disable APNS connection and error-responses handlder immediately, force_close it.
+If you want disable APNS connection and error-responses handler immediately, force_close it.
 ```python
 apns_enhanced.gateway_server.force_close()
 ```
