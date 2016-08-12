@@ -187,9 +187,6 @@ class APNsConnection(object):
         self.enhanced = enhanced
         self.connection_alive = False
 
-    def __del__(self):
-        self._disconnect();
-
     def _connect(self):
         # Establish an SSL connection
         _logger.debug("%s APNS connection establishing..." % self.__class__.__name__)
