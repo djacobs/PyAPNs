@@ -42,10 +42,7 @@ except ImportError:
 
 from _ssl import SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import json
 
 _logger = logging.getLogger(__name__)
 
