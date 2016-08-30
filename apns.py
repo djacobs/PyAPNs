@@ -556,7 +556,7 @@ class GatewayConnection(APNsConnection):
 
     def send_notification_multiple(self, frame):
         self._sent_notifications += frame.get_notifications(self)
-        return self.write(frame.get_frame())
+        return self.write(bytes(frame.get_frame()))
     
     def register_response_listener(self, response_listener):
         self._response_listener = response_listener
