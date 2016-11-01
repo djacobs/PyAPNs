@@ -85,9 +85,27 @@ SENT_BUFFER_QTY = 100000
 WAIT_WRITE_TIMEOUT_SEC = 10
 WAIT_READ_TIMEOUT_SEC = 10
 WRITE_RETRY = 3
+WAIT_READ = 1
+WAIT_WRITE = 2
 
 ER_STATUS = 'status'
 ER_IDENTIFER = 'identifier'
+
+
+def _wait_for_socket(sock, direction, timeout=None):
+    try:
+        poll = select.poll()
+        poll.register(sock, select.POLLIN if direction == WAIT_READ else select.POLLOUT)
+        if timeout:
+            timeout *= 1000
+        events = poll.poll(timeout)
+        return bool(events)
+    except AttributeError:  # fallback for systems not supporting poll()
+        rlist = [sock] if direction == WAIT_READ else []
+        wlist = [sock] if direction == WAIT_WRITE else []
+        rlist, wlist, _ = select.select(rlist, wlist, [], timeout)
+        return bool(rlist or wlist)
+
 
 class APNs(object):
     """A class representing an Apple Push Notification service connection"""
@@ -211,9 +229,9 @@ class APNsConnection(object):
                     break
                 except ssl.SSLError as err:
                     if ssl.SSL_ERROR_WANT_READ == err.args[0]:
-                        select.select([self._ssl], [], [])
+                        _wait_for_socket(self._ssl, WAIT_READ)
                     elif ssl.SSL_ERROR_WANT_WRITE == err.args[0]:
-                        select.select([], [self._ssl], [])
+                        _wait_for_socket(self._ssl, WAIT_WRITE)
                     else:
                         raise
 
@@ -254,9 +272,9 @@ class APNsConnection(object):
     def write(self, string):
         if self.enhanced: # nonblocking socket
             self._last_activity_time = time.time()
-            _, wlist, _ = select.select([], [self._connection()], [], WAIT_WRITE_TIMEOUT_SEC)
-            
-            if len(wlist) > 0:
+            writeable = _wait_for_socket(self._connection(), WAIT_WRITE, WAIT_WRITE_TIMEOUT_SEC)
+
+            if writeable:
                 length = self._connection().sendall(string)
                 if length == 0:
                     _logger.debug("sent length: %d" % length) #DEBUG
@@ -594,9 +612,8 @@ class GatewayConnection(APNsConnection):
                     continue
                 
                 try:
-                    rlist, _, _ = select.select([self._apns_connection._connection()], [], [], WAIT_READ_TIMEOUT_SEC)
-                    
-                    if len(rlist) > 0: # there's some data from APNs
+                    readable = _wait_for_socket(self._apns_connection._connection(), WAIT_READ, WAIT_READ_TIMEOUT_SEC)
+                    if readable: # there's some data from APNs
                         with self._apns_connection._send_lock:
                             buff = self._apns_connection.read(ERROR_RESPONSE_LENGTH)
                             if len(buff) == ERROR_RESPONSE_LENGTH:

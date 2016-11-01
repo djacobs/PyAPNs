@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
+from contextlib import contextmanager
+
 from apns import *
+from apns import _wait_for_socket
 from binascii import a2b_hex
 from random import random
+import socket
 
 import hashlib
 import os
@@ -208,6 +212,57 @@ class TestAPNs(unittest.TestCase):
         Payload(u'\u0100' * int(max_raw_payload_bytes / 2))
         self.assertRaises(PayloadTooLargeError, Payload,
             u'\u0100' * (int(max_raw_payload_bytes / 2) + 1))
+
+    def testWaitForSocket(self):
+        @contextmanager
+        def assert_timing(expected, delta):
+            start = time.time()
+            yield
+            end = time.time()
+            took = end - start
+            self.assertTrue(expected > took - delta / 2)
+            self.assertTrue(expected < took + delta / 2)
+
+        socket1, socket2 = socket.socketpair()
+        socket1.setblocking(False)
+        socket2.setblocking(False)
+
+        # Nothing was written, therefore waiting for reading should time out
+        with assert_timing(1, 0.1):
+            result = _wait_for_socket(socket1, WAIT_READ, 1)
+        self.assertFalse(result)
+
+        # Send-buffer is empty, waiting for write shouldn't block
+        with assert_timing(0, 0.1):
+            result = _wait_for_socket(socket1, WAIT_WRITE, 5)
+        self.assertTrue(result)
+        socket2.send('test')
+
+        # We just sent something, reading on the other ending shouldn't block now
+        with assert_timing(0, 0.1):
+            result = _wait_for_socket(socket1, WAIT_READ, 5)
+        self.assertTrue(result)
+        self.assertEquals(socket1.recv(1024), 'test')
+
+        # Fill up the write-buffer
+        try:
+            while socket1.send(1024 * 'a') == 1024:
+                continue
+        except socket.error:
+            pass
+
+        # Waiting for write should block now
+        with assert_timing(1, 0.1):
+            result = _wait_for_socket(socket1, WAIT_WRITE, 1)
+        self.assertFalse(result)
+
+        # Closed socket returns being readable
+        socket2.close()
+        with assert_timing(0, 0.1):
+            result = _wait_for_socket(socket1, WAIT_READ)
+        self.assertTrue(result)
+
+        socket1.close()
 
 if __name__ == '__main__':
     unittest.main()
