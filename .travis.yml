@@ -1,5 +1,8 @@
 language: python
+sudo: false
 python:
+  - "3.6"
+  - "3.5"
   - "2.7"
   - "2.6"
 script: "python tests.py"
