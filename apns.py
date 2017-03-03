@@ -52,31 +52,31 @@ NOTIFICATION_COMMAND = 0
 ENHANCED_NOTIFICATION_COMMAND = 1
 
 NOTIFICATION_FORMAT = (
-     '!'   # network big-endian
-     'B'   # command
-     'H'   # token length
-     '32s' # token
-     'H'   # payload length
-     '%ds' # payload
-    )
+    '!'   # network big-endian
+    'B'   # command
+    'H'   # token length
+    '32s' # token
+    'H'   # payload length
+    '%ds' # payload
+)
 
 ENHANCED_NOTIFICATION_FORMAT = (
-     '!'   # network big-endian
-     'B'   # command
-     'I'   # identifier
-     'I'   # expiry
-     'H'   # token length
-     '32s' # token
-     'H'   # payload length
-     '%ds' # payload
-    )
+    '!'   # network big-endian
+    'B'   # command
+    'I'   # identifier
+    'I'   # expiry
+    'H'   # token length
+    '32s' # token
+    'H'   # payload length
+    '%ds' # payload
+)
 
 ERROR_RESPONSE_FORMAT = (
-     '!'   # network big-endian
-     'B'   # command
-     'B'   # status
-     'I'   # identifier
-    )
+    '!'   # network big-endian
+    'B'   # command
+    'B'   # status
+    'I'   # identifier
+)
 
 TOKEN_LENGTH = 32
 ERROR_RESPONSE_LENGTH = 6
