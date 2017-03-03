@@ -298,7 +298,7 @@ class PayloadTooLargeError(Exception):
 
 class Payload(object):
     """A class representing an APNs message payload"""
-    def __init__(self, alert=None, badge=None, sound=None, category=None, custom={}, content_available=False,
+    def __init__(self, alert=None, badge=None, sound=None, category=None, custom=None, content_available=False,
                  mutable_content=False):
         super(Payload, self).__init__()
         self.alert = alert
@@ -334,7 +334,7 @@ class Payload(object):
             d.update({'mutable-content': 1})
 
         d = { 'aps': d }
-        d.update(self.custom)
+        d.update(self.custom or {})  # Use empty dict unless specified
         return d
 
     def json(self):
