@@ -334,7 +334,8 @@ class Payload(object):
             d.update({'mutable-content': 1})
 
         d = { 'aps': d }
-        d.update(self.custom or {})  # Use empty dict unless specified
+        if self.custom:
+            d.update(self.custom)
         return d
 
     def json(self):
