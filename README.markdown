@@ -145,5 +145,5 @@ See [LICENSE](LICENSE) file for the complete license details.
 
 Written and maintained by Simon Whitaker at [Goo Software Ltd][goo].
 
-[a1]:http://developer.apple.com/iphone/library/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Introduction/Introduction.html#//apple_ref/doc/uid/TP40008194-CH1-SW1
+[a1]:https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/APNSOverview.html#//apple_ref/doc/uid/TP40008194-CH8-SW1
 [goo]:http://www.goosoftware.co.uk/
