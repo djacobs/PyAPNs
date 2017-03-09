@@ -339,7 +339,7 @@ class Payload(object):
         return d
 
     def json(self):
-        return json.dumps(self.dict(), separators=(',',':'), ensure_ascii=False).encode('utf-8')
+        return json.dumps(self.dict(), separators=(',',':'), ensure_ascii=True).encode('utf-8')
 
     def _check_size(self):
         payload_length = len(self.json())
