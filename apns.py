@@ -78,7 +78,7 @@ ERROR_RESPONSE_FORMAT = (
     'I'   # identifier
 )
 
-TOKEN_LENGTH = 32
+TOKEN_LENGTH = int(32)
 ERROR_RESPONSE_LENGTH = 6
 DELAY_RESEND_SEC = 0.0
 SENT_BUFFER_QTY = 100000
@@ -132,7 +132,7 @@ class APNs(object):
         """
         Returns an unsigned int in packed big-endian (network) form
         """
-        return pack('>I', num)
+        return pack('>I', int(num))
 
     @staticmethod
     def unpacked_uint_big_endian(bytes):
@@ -513,7 +513,7 @@ class GatewayConnection(APNsConnection):
         token = a2b_hex(token_hex)
         payload = payload.json()
         fmt = ENHANCED_NOTIFICATION_FORMAT % len(payload)
-        notification = pack(fmt, ENHANCED_NOTIFICATION_COMMAND, identifier, expiry,
+        notification = pack(fmt, ENHANCED_NOTIFICATION_COMMAND, identifier, int(expiry),
                             TOKEN_LENGTH, token, len(payload), payload)
         return notification
 
