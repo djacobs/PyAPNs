@@ -99,6 +99,10 @@ class APNs(object):
         """
         super(APNs, self).__init__()
         self.use_sandbox = use_sandbox
+        if cert_file:
+            open(cert_file).read()
+        if key_file:
+            open(key_file).read()
         self.cert_file = cert_file
         self.key_file = key_file
         self._feedback_connection = None
