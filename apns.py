@@ -28,6 +28,7 @@ from datetime import datetime
 from socket import socket, timeout, AF_INET, SOCK_STREAM
 from socket import error as socket_error
 from struct import pack, unpack
+from ssl import SSLError
 import sys
 import ssl
 import select
