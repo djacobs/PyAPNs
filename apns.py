@@ -268,7 +268,7 @@ class APNsConnection(object):
 
 
 class PayloadAlert(object):
-    def __init__(self, title = None, subtitle = None, body=None, action_loc_key=None, loc_key=None,
+    def __init__(self, title=None, subtitle=None, body=None, action_loc_key=None, loc_key=None,
                  loc_args=None, launch_image=None):
         super(PayloadAlert, self).__init__()
         self.title = title
