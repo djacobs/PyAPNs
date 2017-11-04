@@ -1,6 +1,6 @@
-# PyAPNs 
+# PyAPNs
 
-A Python library for interacting with the Apple Push Notification service 
+A Python library for interacting with the Apple Push Notification service
 (APNs)
 
 ## Installation
@@ -48,7 +48,7 @@ for (token_hex, fail_time) in feedback_connection.feedback_server.items():
 ```
 
 
-For more complicated alerts including custom buttons etc, use the PayloadAlert 
+For more complicated alerts including custom buttons etc, use the PayloadAlert
 class. Example:
 
 ```python
@@ -77,7 +77,7 @@ apns_enhanced.gateway_server.send_notification(token_hex, payload, identifier=id
 ```
 
 Callback when error-response occur, with parameter `{'status': <status code from APNS>, 'identifier': <the identifier specified>}`
-[Status code reference](https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/CommunicatingWIthAPS.html#//apple_ref/doc/uid/TP40008194-CH101-SW4)
+[Status code reference](https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/BinaryProviderAPI.html#//apple_ref/doc/uid/TP40008194-CH13-SW11)
 ```python
 def response_listener(error_response):
     _logger.debug("client get error-response: " + str(error_response))
@@ -145,5 +145,5 @@ See [LICENSE](LICENSE) file for the complete license details.
 
 Written and maintained by Simon Whitaker at [Goo Software Ltd][goo].
 
-[a1]:http://developer.apple.com/iphone/library/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Introduction/Introduction.html#//apple_ref/doc/uid/TP40008194-CH1-SW1
+[a1]:https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/BinaryProviderAPI.html#//apple_ref/doc/uid/TP40008194-CH13-SW1
 [goo]:http://www.goosoftware.co.uk/
