@@ -129,7 +129,7 @@ Result:
 
 ## Travis Build Status
 
-[![Build Status](https://secure.travis-ci.org/djacobs/PyAPNs.png?branch=master)](http://travis-ci.org/djacobs/PyAPNs)
+[![Build Status](https://secure.travis-ci.org/djacobs/PyAPNs.svg?branch=master)](http://travis-ci.org/djacobs/PyAPNs)
 
 ## Further Info
 
