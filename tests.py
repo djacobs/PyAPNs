@@ -9,6 +9,8 @@ import os
 import time
 import unittest
 
+import json
+
 TEST_CERTIFICATE = "certificate.pem" # replace with path to test certificate
 
 NUM_MOCK_TOKENS = 10
@@ -188,9 +190,15 @@ class TestAPNs(unittest.TestCase):
         frame = Frame()
         frame.add_item(token_hex, payload, identifier, expiry, priority)
 
-        f1 = bytearray(b'\x02\x00\x00\x00t\x01\x00 \xb5\xbb\x9d\x80\x14\xa0\xf9\xb1\xd6\x1e!\xe7\x96\xd7\x8d\xcc\xdf\x13R\xf2<\xd3(\x12\xf4\x85\x0b\x87\x8a\xe4\x94L\x02\x00<{"aps":{"sound":"default","badge":4,"alert":"Hello World!"}}\x03\x00\x04\x00\x00\x00\x01\x04\x00\x04\x00\x00\x0e\x10\x05\x00\x01\n')
-        f2 = bytearray(b'\x02\x00\x00\x00t\x01\x00 \xb5\xbb\x9d\x80\x14\xa0\xf9\xb1\xd6\x1e!\xe7\x96\xd7\x8d\xcc\xdf\x13R\xf2<\xd3(\x12\xf4\x85\x0b\x87\x8a\xe4\x94L\x02\x00<{"aps":{"sound":"default","alert":"Hello World!","badge":4}}\x03\x00\x04\x00\x00\x00\x01\x04\x00\x04\x00\x00\x0e\x10\x05\x00\x01\n')
-        self.assertTrue(f1 == frame.get_frame() or f2 == frame.get_frame())
+        fstart = b'\x02\x00\x00\x00t\x01\x00 \xb5\xbb\x9d\x80\x14\xa0\xf9\xb1\xd6\x1e!\xe7\x96\xd7\x8d\xcc\xdf\x13R\xf2<\xd3(\x12\xf4\x85\x0b\x87\x8a\xe4\x94L\x02\x00<{"aps":'
+        fend = b'}\x03\x00\x04\x00\x00\x00\x01\x04\x00\x04\x00\x00\x0e\x10\x05\x00\x01\n'
+        f = frame.get_frame()
+        self.assertTrue(f.startswith(fstart))
+        self.assertTrue(f.endswith(fend))
+
+        fmid = f[len(fstart): -len(fend)]
+        d = json.loads(fmid.decode('utf-8'))
+        self.assertTrue(d, {"alert": "Hello World!", "badge": 4, "sound": "default"})
 
     def testPayloadTooLargeError(self):
         # The maximum size of the JSON payload is MAX_PAYLOAD_LENGTH 
