@@ -241,7 +241,7 @@ class APNsConnection(object):
             if self._ssl:
                 self._ssl.close()
             self.connection_alive = False
-            _logger.info(" %s APNS connection closed" % self.__class__.__name__)
+            _logger.debug(" %s APNS connection closed" % self.__class__.__name__)
 
     def _connection(self):
         if not self._ssl or not self.connection_alive:
