@@ -205,9 +205,9 @@ class TestAPNs(unittest.TestCase):
             '.' * (max_raw_payload_bytes + 1))
 
         # Test unicode 2-byte characters payload
-        Payload(u'\u0100' * int(max_raw_payload_bytes / 2))
+        Payload('\\u0100' * int(max_raw_payload_bytes / 2))
         self.assertRaises(PayloadTooLargeError, Payload,
-            u'\u0100' * (int(max_raw_payload_bytes / 2) + 1))
+            '\\u0100' * (int(max_raw_payload_bytes / 2) + 1))
 
 if __name__ == '__main__':
     unittest.main()
