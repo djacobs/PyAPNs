@@ -10,5 +10,5 @@ setup(
     py_modules = ['apns'],
     scripts = ['apns-send'],
     url = 'http://29.io/',
-    version = '2.0.1',
+    version = 'canwehatch.2.0.2',
 )

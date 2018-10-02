@@ -267,37 +267,44 @@ class APNsConnection(object):
             return self._connection().write(string)
 
 
-class PayloadAlert(object):
-    def __init__(self, body=None, title = None, subtitle = None, action_loc_key=None, loc_key=None,
-                 loc_args=None, launch_image=None):
-        super(PayloadAlert, self).__init__()
-        
-        self.body = body
-        self.title = title
-        self.subtitle = subtitle
-        self.action_loc_key = action_loc_key
-        self.loc_key = loc_key
-        self.loc_args = loc_args
-        self.launch_image = launch_image
+class PayloadAlert(dict):
+    """
+    Payload for APNS alert.
+    https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/PayloadKeyReference.html
+    """
+    def __init__(self,
+                 body=None,
+                 title=None,
+                 subtitle=None,
+                 action_loc_key=None,
+                 loc_key=None,
+                 loc_args=None,
+                 launch_image=None,
+                 title_loc_key=None,
+                 title_loc_args=None):
+        dict_ = {
+            'body': body,
+            'title': title,
+            'subtitle': subtitle,
+            'action-loc-key': action_loc_key,
+            'loc-key': loc_key,
+            'loc-args': loc_args,
+            'launch-image': launch_image,
+            'title-loc-key': title_loc_key,
+            'title-loc-args': title_loc_args
+        }
+
+        # init dictionary with non None items
+        super(PayloadAlert, self).__init__(
+            {
+                key: value for (key, value)
+                in dict_.items() if value is not None
+            }
+        )
 
     def dict(self):
-        d = {}
-        
-        if self.body:
-            d['body'] = self.body
-        if self.title:
-            d['title'] = self.title
-        if self.subtitle:
-            d['subtitle'] = self.subtitle
-        if self.action_loc_key:
-            d['action-loc-key'] = self.action_loc_key
-        if self.loc_key:
-            d['loc-key'] = self.loc_key
-        if self.loc_args:
-            d['loc-args'] = self.loc_args
-        if self.launch_image:
-            d['launch-image'] = self.launch_image
-        return d
+        return self
+
 
 class PayloadTooLargeError(Exception):
     def __init__(self, payload_size):
