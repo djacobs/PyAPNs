@@ -321,6 +321,13 @@ class Payload(object):
     def dict(self):
         """Returns the payload as a regular Python dictionary"""
         d = {}
+        
+        if self.sound:
+            d['sound'] = self.sound
+        if self.badge is not None:
+            d['badge'] = int(self.badge)
+        if self.category:
+            d['category'] = self.category
         if self.alert:
             # Alert can be either a string or a PayloadAlert
             # object
@@ -328,13 +335,7 @@ class Payload(object):
                 d['alert'] = self.alert.dict()
             else:
                 d['alert'] = self.alert
-        if self.sound:
-            d['sound'] = self.sound
-        if self.badge is not None:
-            d['badge'] = int(self.badge)
-        if self.category:
-            d['category'] = self.category
-
+                
         if self.content_available:
             d.update({'content-available': 1})
 
