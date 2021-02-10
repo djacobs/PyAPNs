@@ -9,6 +9,6 @@ setup(
     name = 'apns',
     py_modules = ['apns'],
     scripts = ['apns-send'],
-    url = 'http://29.io/',
+    url = 'https://github.com/djacobs/PyAPNs',
     version = '2.0.1',
 )
