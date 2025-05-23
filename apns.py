@@ -46,7 +46,7 @@ import json
 
 _logger = logging.getLogger(__name__)
 
-MAX_PAYLOAD_LENGTH = 2048
+MAX_PAYLOAD_LENGTH = 4096
 
 NOTIFICATION_COMMAND = 0
 ENHANCED_NOTIFICATION_COMMAND = 1
@@ -307,7 +307,7 @@ class PayloadTooLargeError(Exception):
 class Payload(object):
     """A class representing an APNs message payload"""
     def __init__(self, alert=None, badge=None, sound=None, category=None, custom=None, content_available=False,
-                 mutable_content=False):
+                 mutable_content=False, interruption_level=None, relevance_score=None):
         super(Payload, self).__init__()
         self.alert = alert
         self.badge = badge
@@ -316,6 +316,8 @@ class Payload(object):
         self.custom = custom
         self.content_available = content_available
         self.mutable_content = mutable_content
+        self.interruption_level = interruption_level
+        self.relevance_score = relevance_score
         self._check_size()
 
     def dict(self):
@@ -341,6 +343,14 @@ class Payload(object):
         if self.mutable_content:
             d.update({'mutable-content': 1})
 
+        # TODO: Add support for interruption-level (iOS 15+)
+        # if self.interruption_level:
+        #     d['interruption-level'] = self.interruption_level
+        
+        # TODO: Add support for relevance-score (iOS 15+)
+        # if self.relevance_score is not None:
+        #    d['relevance-score'] = self.relevance_score
+        
         d = { 'aps': d }
         if self.custom:
             d.update(self.custom)
@@ -416,6 +426,11 @@ class Frame(object):
         """Get the frame buffer"""
         return str(self.frame_data)
 
+# TODO: The legacy binary feedback service is deprecated with the HTTP/2 APNS API.
+# Device token management and handling of unregistered devices should now be
+# primarily based on error responses from the APNS server (e.g., 'Unregistered' (410))
+# and through direct feedback from the app. This class will likely need to be removed
+# or its purpose completely re-evaluated in an HTTP/2 context.
 class FeedbackConnection(APNsConnection):
     """
     A class representing a connection to the APNs Feedback server
@@ -470,6 +485,12 @@ class FeedbackConnection(APNsConnection):
                     # some more data and append to buffer
                     break
 
+# TODO: This class requires a major refactor to support the HTTP/2 APNS API.
+# This includes:
+# - Replacing socket-based communication with an HTTP/2 client (e.g., using libraries like 'httpx' or 'hyper').
+# - Implementing token-based authentication (JWT) instead of certificate-based authentication.
+# - Updating send_notification methods to construct HTTP/2 requests with appropriate headers and JSON payloads.
+# - Revising error handling for HTTP/2 status codes and JSON error responses.
 class GatewayConnection(APNsConnection):
     """
     A class that represents a connection to the APNs gateway server
@@ -478,9 +499,10 @@ class GatewayConnection(APNsConnection):
     def __init__(self, use_sandbox=False, **kwargs):
         super(GatewayConnection, self).__init__(**kwargs)
         self.server = (
-            'gateway.push.apple.com',
-            'gateway.sandbox.push.apple.com')[use_sandbox]
-        self.port = 2195
+            'api.push.apple.com',  # Production
+            'api.sandbox.push.apple.com'  # Sandbox
+        )[use_sandbox]
+        self.port = 443
         if self.enhanced == True: #start error-response monitoring thread
             self._last_activity_time = time.time()
 
@@ -578,6 +600,25 @@ class GatewayConnection(APNsConnection):
         TIMEOUT_IDLE = 30
         return (time.time() - self._last_activity_time) >= TIMEOUT_IDLE
 
+    # TODO: This ErrorResponseHandlerWorker is part of the legacy binary APNS protocol.
+    # It will be replaced by error handling logic within the new HTTP/2 client implementation.
+    #
+    # APNS HTTP/2 Error Handling:
+    # Errors are typically indicated by HTTP status codes. The response body is a JSON object
+    # with a "reason" key, e.g., { "reason": "PayloadTooLarge" }.
+    #
+    # Common HTTP Status Codes:
+    # - 400: Bad request (e.g., BadDeviceToken, BadPath, MissingTopic, PayloadEmpty)
+    # - 403: Forbidden (e.g., BadCertificate, BadCertificateEnvironment, Forbidden)
+    # - 404: Not Found (e.g., BadPath)
+    # - 405: Method Not Allowed
+    # - 410: Unregistered (the device token is no longer active)
+    # - 413: Payload Too Large
+    # - 429: Too Many Requests (check for 'retry-after' header or timestamp in JSON)
+    # - 500: Internal Server Error
+    # - 503: Service Unavailable
+    #
+    # The new implementation should parse these HTTP status codes and the JSON error body.
     class ErrorResponseHandlerWorker(threading.Thread):
         def __init__(self, apns_connection):
             threading.Thread.__init__(self, name=self.__class__.__name__)

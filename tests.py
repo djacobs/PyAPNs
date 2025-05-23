@@ -1,3 +1,10 @@
+# TODO: This test suite requires a major overhaul to support the APNS HTTP/2 API.
+# This includes:
+# - Mocking HTTP/2 client interactions (e.g., using unittest.mock and potentially HTTP client-specific testing tools).
+# - Testing JWT (token-based) authentication.
+# - Verifying correct HTTP/2 headers (apns-topic, apns-priority, apns-push-type, etc.).
+# - Testing new JSON-based error responses and HTTP status codes.
+# - Updating payload tests for any new APNS features.
 #!/usr/bin/env python
 # coding: utf-8
 from apns import *
@@ -49,21 +56,23 @@ class TestAPNs(unittest.TestCase):
         apns_test = APNs(use_sandbox=True)
         apns_prod = APNs(use_sandbox=False)
 
-        self.assertEqual(apns_test.gateway_server.port, 2195)
+        self.assertEqual(apns_test.gateway_server.port, 443)
         self.assertEqual(apns_test.gateway_server.server,
-            'gateway.sandbox.push.apple.com')
-        self.assertEqual(apns_test.feedback_server.port, 2196)
+            'api.sandbox.push.apple.com')
+        self.assertEqual(apns_test.feedback_server.port, 443) # Legacy, will be removed
         self.assertEqual(apns_test.feedback_server.server,
-            'feedback.sandbox.push.apple.com')
+            'api.sandbox.push.apple.com') # Legacy, will be removed
 
-        self.assertEqual(apns_prod.gateway_server.port, 2195)
+        self.assertEqual(apns_prod.gateway_server.port, 443)
         self.assertEqual(apns_prod.gateway_server.server,
-            'gateway.push.apple.com')
-        self.assertEqual(apns_prod.feedback_server.port, 2196)
+            'api.push.apple.com')
+        self.assertEqual(apns_prod.feedback_server.port, 443) # Legacy, will be removed
         self.assertEqual(apns_prod.feedback_server.server,
-            'feedback.push.apple.com')
+            'api.push.apple.com') # Legacy, will be removed
 
     def testGatewayServer(self):
+        # TODO: This test is for the legacy binary protocol's GatewayServer.
+        # It will need to be completely rewritten to test HTTP/2 based notification sending.
         pem_file = TEST_CERTIFICATE
         apns = APNs(use_sandbox=True, cert_file=pem_file, key_file=pem_file)
         gateway_server = apns.gateway_server
@@ -91,6 +100,9 @@ class TestAPNs(unittest.TestCase):
         self.assertEqual(notification[0:1], b'\0')
 
     def testFeedbackServer(self):
+        # TODO: This test is for the legacy binary FeedbackServer.
+        # The binary feedback service is deprecated. This test will likely be removed.
+        # Error handling for unregistered tokens should be tested via HTTP/2 error responses.
         pem_file = TEST_CERTIFICATE
         apns = APNs(use_sandbox=True, cert_file=pem_file, key_file=pem_file)
         feedback_server = apns.feedback_server
@@ -174,7 +186,19 @@ class TestAPNs(unittest.TestCase):
         d = p.dict()
         self.assertEqual(d, {'foo': 'bar', 'aps': {'alert': 'foobar'}})
 
+        # Test payload with interruption_level attribute
+        p = Payload(alert='foo', interruption_level='time-sensitive')
+        self.assertTrue(hasattr(p, 'interruption_level'))
+        self.assertEqual(p.interruption_level, 'time-sensitive')
+
+        # Test payload with relevance_score attribute
+        p = Payload(alert='foo', relevance_score=0.75)
+        self.assertTrue(hasattr(p, 'relevance_score'))
+        self.assertEqual(p.relevance_score, 0.75)
+
     def testFrame(self):
+        # TODO: This test is for the legacy binary protocol's Frame object.
+        # HTTP/2 handles multiplexing differently. This test will likely be removed or its relevance re-evaluated.
         identifier = 1
         expiry = 3600
         token_hex = 'b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c'

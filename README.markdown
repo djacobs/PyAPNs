@@ -1,13 +1,31 @@
 # PyAPNs 
 
+> **Note:** This library is currently undergoing a major update to support Apple's newer HTTP/2-based APNS protocol. Much of the documentation below describes the legacy binary protocol and will be updated once the migration is complete. Key changes will include token-based authentication, new API methods, and updated error handling.
+
 A Python library for interacting with the Apple Push Notification service 
 (APNs)
 
 ## Installation
 
-Either download the source from GitHub or use easy_install:
+To install from source after cloning the repository:
 
-    $ easy_install apns
+```bash
+pip install .
+```
+This will install the library along with dependencies like `PyJWT` (as specified in `setup.py`). An HTTP/2 client library (e.g., `httpx`) will need to be added to `setup.py` and installed for the full HTTP/2 functionality.
+
+## Upcoming HTTP/2 Support
+
+The library is being updated to use Apple's modern HTTP/2 APNS API. This will bring several changes:
+
+*   **Token-Based Authentication:** Instead of certificates, you'll use an APNS Authentication Key (`.p8` file), a Key ID, and your Team ID.
+*   **HTTP/2 Protocol:** Communication will be over HTTP/2, offering better performance and features like multiplexing.
+*   **JSON Payloads:** Similar to the current library, but with support for newer APNS features and a larger payload limit (4KB).
+*   **New Headers:** Utilizing headers like `apns-push-type`, `apns-topic`, `apns-priority`, etc.
+*   **Updated Error Handling:** Based on HTTP status codes and JSON error responses.
+*   **Deprecation of Binary Feedback Service:** Handling of unregistered device tokens will rely on HTTP/2 error responses (e.g., `410 Unregistered`).
+
+The API and usage examples below will be updated accordingly.
 
 ## Sample usage
 
@@ -36,6 +54,8 @@ frame.add_item('b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b87', paylo
 apns.gateway_server.send_notification_multiple(frame)
 ```
 
+> **Legacy Feedback Service (Binary Protocol):** The following describes the feedback service for the old binary protocol. This service is deprecated with the HTTP/2 API.
+
 Apple recommends to query the feedback service daily to get the list of device tokens. You need to create a new connection to APNS to see all the tokens that have failed since you only receive that information upon connection. Remember, once you have viewed the list of tokens, Apple will clear the list from their servers. Use the timestamp to verify that the device tokens haven’t been reregistered since the feedback entry was generated. For each device that has not been reregistered, stop sending notifications. By using this information to stop sending push notifications that will fail to be delivered, you reduce unnecessary message overhead and improve overall system performance.
 
 ```
@@ -62,6 +82,8 @@ of the Payload constructor.
 ```python
 payload = Payload(alert="Hello World!", custom={'sekrit_number':123})
 ```
+
+> **Legacy Enhanced Binary Protocol Features:** The following describes features specific to the enhanced mode of the legacy binary protocol. These will be superseded by standard HTTP/2 client behavior and error handling.
 
 ### Enhanced Message with immediate error-response
 ```python
