@@ -33,6 +33,7 @@ import ssl
 import select
 import time
 import collections, itertools
+from collections import OrderedDict
 import logging
 import threading
 try:
@@ -225,11 +226,11 @@ class APNsConnection(object):
                     break
                 except SSLError as ex:
                     if ex.args[0] == SSL_ERROR_WANT_READ:
-                        sys.exc_clear()
+                        continue
                     elif ex.args[0] == SSL_ERROR_WANT_WRITE:
-                        sys.exc_clear()
+                        continue
                     else:
-                       raise
+                        raise
 
         self.connection_alive = True
         _logger.debug("%s APNS connection established" % self.__class__.__name__)
@@ -320,7 +321,11 @@ class Payload(object):
 
     def dict(self):
         """Returns the payload as a regular Python dictionary"""
-        d = {}
+        d = OrderedDict()
+        if self.sound:
+            d['sound'] = self.sound
+        if self.badge is not None:
+            d['badge'] = int(self.badge)
         if self.alert:
             # Alert can be either a string or a PayloadAlert
             # object
@@ -328,10 +333,6 @@ class Payload(object):
                 d['alert'] = self.alert.dict()
             else:
                 d['alert'] = self.alert
-        if self.sound:
-            d['sound'] = self.sound
-        if self.badge is not None:
-            d['badge'] = int(self.badge)
         if self.category:
             d['category'] = self.category
 
