@@ -36,6 +36,23 @@ frame.add_item('b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b87', paylo
 apns.gateway_server.send_notification_multiple(frame)
 ```
 
+## HTTP/2 sample usage
+
+The legacy binary interface above is deprecated. The `apns2.py` module provides a
+minimal client that uses Apple's modern HTTP/2 provider API.
+
+```python
+from apns2 import APNsHTTP2
+from apns import Payload
+import json
+
+client = APNsHTTP2(use_sandbox=True, cert_file='cert.pem', key_file='key.pem')
+payload = Payload(alert="Hello HTTP/2")
+client.send_notification(
+    'device_token_hex', json.loads(payload.json()), topic='com.example.App'
+)
+```
+
 Apple recommends to query the feedback service daily to get the list of device tokens. You need to create a new connection to APNS to see all the tokens that have failed since you only receive that information upon connection. Remember, once you have viewed the list of tokens, Apple will clear the list from their servers. Use the timestamp to verify that the device tokens haven’t been reregistered since the feedback entry was generated. For each device that has not been reregistered, stop sending notifications. By using this information to stop sending push notifications that will fail to be delivered, you reduce unnecessary message overhead and improve overall system performance.
 
 ```

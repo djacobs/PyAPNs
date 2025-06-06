@@ -321,6 +321,10 @@ class Payload(object):
     def dict(self):
         """Returns the payload as a regular Python dictionary"""
         d = {}
+        if self.sound:
+            d['sound'] = self.sound
+        if self.badge is not None:
+            d['badge'] = int(self.badge)
         if self.alert:
             # Alert can be either a string or a PayloadAlert
             # object
@@ -328,10 +332,6 @@ class Payload(object):
                 d['alert'] = self.alert.dict()
             else:
                 d['alert'] = self.alert
-        if self.sound:
-            d['sound'] = self.sound
-        if self.badge is not None:
-            d['badge'] = int(self.badge)
         if self.category:
             d['category'] = self.category
 
@@ -347,7 +347,7 @@ class Payload(object):
         return d
 
     def json(self):
-        return json.dumps(self.dict(), separators=(',',':'), ensure_ascii=False).encode('utf-8')
+        return json.dumps(self.dict(), separators=(',', ':'), ensure_ascii=False).encode('utf-8')
 
     def _check_size(self):
         payload_length = len(self.json())

@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+
+"""Command line script for sending a push via HTTP/2"""
+
+import optparse
+import json
+from apns2 import APNsHTTP2
+from apns import Payload  # reuse existing Payload class
+
+parser = optparse.OptionParser()
+
+parser.add_option("-c", "--certificate-file", dest="certificate_file", help="Path to .pem certificate file")
+parser.add_option("-k", "--key-file", dest="key_file", help="Path to .pem key file")
+parser.add_option("-p", "--push-token", dest="push_token", help="Push token")
+parser.add_option("-t", "--topic", dest="topic", help="Topic (usually the app bundle id)")
+parser.add_option("-m", "--message", dest="message", help="Message")
+parser.add_option("-s", "--sandbox", action="store_true", dest="sandbox", default=False, help="Use apple sandbox")
+
+options, args = parser.parse_args()
+
+if not options.certificate_file or not options.key_file:
+    parser.error('Must provide certificate and key files')
+if not options.push_token:
+    parser.error('Must provide --push-token')
+if not options.message:
+    parser.error('Must provide --message')
+if not options.topic:
+    parser.error('Must provide --topic')
+
+apns = APNsHTTP2(use_sandbox=options.sandbox, cert_file=options.certificate_file, key_file=options.key_file)
+
+payload = Payload(alert=options.message, sound="default", badge=1)
+resp = apns.send_notification(options.push_token, json.loads(payload.json()), topic=options.topic)
+print("Status:", resp.status_code)

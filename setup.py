@@ -7,8 +7,8 @@ setup(
     download_url = 'https://github.com/djacobs/PyAPNs',
     license = 'unlicense.org',
     name = 'apns',
-    py_modules = ['apns'],
-    scripts = ['apns-send'],
+    py_modules = ['apns', 'apns2'],
+    scripts = ['apns-send', 'apns-send-http2'],
     url = 'http://29.io/',
     version = '2.0.1',
 )
